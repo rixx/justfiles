@@ -1,4 +1,4 @@
-set shell := ["bash", "-c"]
+set shell := ["bash", "-euo", "pipefail", "-c"]
 
 dotfiles := env_var("HOME") / ".config/dotfiles"
 movesuffix := "moved-by-dotfiles-install"
@@ -47,9 +47,11 @@ default:
     @just --list
 
 # Install all dotfiles (server + GUI)
+[group('install')]
 install-all: install-server install-gui
 
 # Install server/CLI configurations (git, vim, tmux, fish, mutt, etc.)
+[group('install')]
 install-server:
     #!/usr/bin/env bash
     set -e
@@ -82,6 +84,7 @@ install-server:
     conflink yazi
 
 # Install GUI/desktop configurations (sway, waybar, rofi, kitty, etc.)
+[group('install')]
 install-gui:
     #!/usr/bin/env bash
     set -e

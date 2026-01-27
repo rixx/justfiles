@@ -1,3 +1,5 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
 home := home_directory()
 justfiles := justfile_directory()
 movesuffix := "moved-by-justfiles-install"
@@ -26,7 +28,8 @@ tools.just:" + home + "/src/tools
 default:
     @just --list
 
-# Check status of all justfiles
+# Check status of all justfiles (installed, differs, missing)
+[group('status')]
 status:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -126,6 +129,7 @@ pull-one source target_dir:
     cp "$INSTALLED" "$REPO"
 
 # Install all justfiles to their projects
+[group('sync')]
 install:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -135,6 +139,7 @@ install:
     done <<< '{{mappings}}'
 
 # Pull all modified justfiles from projects back to repo
+[group('sync')]
 pull:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -144,6 +149,7 @@ pull:
     done <<< '{{mappings}}'
 
 # Show backup files that would be removed
+[group('cleanup')]
 clean:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -168,6 +174,7 @@ clean:
     fi
 
 # Remove backup files created during install
+[group('cleanup')]
 clean-confirm:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -181,6 +188,7 @@ clean-confirm:
     done <<< '{{mappings}}'
 
 # Show differences between repo and installed justfiles
+[group('status')]
 diff:
     #!/usr/bin/env bash
     set -euo pipefail

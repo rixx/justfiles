@@ -1,4 +1,9 @@
-# List available commands
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Check for required tools
+_ := require("lualatex")
+
+[private]
 default:
     @just --list
 
@@ -12,7 +17,7 @@ build file:
     base="{{file_stem(file)}}"
     rm -f "$base".aux "$base".log "$base".out "$base".toc "$base".lof "$base".lot "$base".fls "$base".fdb_latexmk "$base".synctex.gz
 
-# Publish compiled documents to their destinations
+# Copy compiled documents to pretalx and legal repositories
 publish:
     cp cla/* ../legal/cla/
     cp auftragsdatenverarbeitung/*.pdf ~/src/pretalx/src/local/pretalx-com/pretalx_com/static/pretalx_com/terms/

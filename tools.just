@@ -1,3 +1,8 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Check for required tools
+_ := require("uvx")
+
 [private]
 default:
     @just --list
@@ -30,9 +35,17 @@ flake8 *args=".":
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort flake8
+fmt: black isort flake8 && _fmt-done
+
+[private]
+@_fmt-done:
+    echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
 
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check flake8
+check: black-check isort-check flake8 && _check-done
+
+[private]
+@_check-done:
+    echo '{{ GREEN }}All checks passed{{ NORMAL }}'

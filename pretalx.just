@@ -1,8 +1,14 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: Apache-2.0
 
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Check for required tools
+_ := require("uv")
+
 # Common variables
 python := "uv run python"
+uv_dev := "uv run --extra=dev"
 src_dir := "src"
 
 [private]
@@ -21,7 +27,7 @@ install-all:
     uv lock --upgrade
     uv sync --all-extras
 
-# Install all dependencies (dev, devdocs, postgres, redis)
+# Install npm dependencies for the schedule editor frontend
 [group('development')]
 [working-directory("src/pretalx/frontend/schedule-editor/")]
 install-npm:
@@ -34,8 +40,8 @@ install-plugin path="":
 
 # Check for outdated dependencies
 [group('development')]
+[script('python3')]
 deps-outdated:
-    #!/usr/bin/env python3
     import json, subprocess, tomllib
     from packaging.requirements import Requirement
 
@@ -50,8 +56,8 @@ deps-outdated:
 
 # Bump a dependency version
 [group('development')]
+[script('python3')]
 deps-bump package version:
-    #!/usr/bin/env python3
     import subprocess, tomllib
     from pathlib import Path
     from packaging.requirements import Requirement
@@ -95,15 +101,15 @@ docs-serve *args="--port 8001":
 api-docs:
     just run spectacular --color --file ../doc/api/schema.yml
 
-# Check codebase for licensing problems
+# Check codebase for licensing compliance
 [group('linting')]
-reuse:
+@reuse:
     uv run reuse lint
 
 # Format code with black
 [group('linting')]
 black *args=src_dir:
-    uv run --extra=dev black {{ args }}
+    {{ uv_dev }} black {{ args }}
 
 # Check code with black (check only)
 [group('linting')]
@@ -118,12 +124,12 @@ isort-check *args=src_dir:
 # Sort imports with isort
 [group('linting')]
 isort *args=src_dir:
-    uv run --extra=dev isort {{ args }}
+    {{ uv_dev }} isort {{ args }}
 
 # Run flake8 linter
 [group('linting')]
 flake8 *args=src_dir:
-    uv run --extra=dev flake8 {{ args }}
+    {{ uv_dev }} flake8 {{ args }}
 
 # Check Django templates with djhtml (check only)
 [group('linting')]
@@ -133,44 +139,50 @@ djhtml-check:
 # Format Django templates with djhtml
 [group('linting')]
 djhtml *args="":
-    find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run --extra=dev djhtml {{ args }}
+    find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs {{ uv_dev }} djhtml {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort djhtml flake8
+fmt: black isort djhtml flake8 && _fmt-done
+
+[private]
+@_fmt-done:
+    echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
 
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check djhtml-check flake8
+check: black-check isort-check djhtml-check flake8 && _check-done
 
-# Open Django shell with access to all events
+[private]
+@_check-done:
+    echo '{{ GREEN }}All checks passed{{ NORMAL }}'
+
+# Open Django shell scoped to a specific event
 [group('development')]
 [no-exit-message]
 shell event="" *args:
     just run shell --event {{ event }} {{ args }}
 
-# Open Django shell with access to all events
+# Open Django shell with all scopes disabled (unsafe, full database access)
 [group('development')]
 [no-exit-message]
 unsafe-shell *args:
     just run shell --unsafe-disable-scopes {{ args }}
 
-# Clean up generated files
+# Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-clean:
-    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-    find . -type f -name "*.pyc" -delete
-    find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-    rm -rf .pytest_cache
-    rm -rf .coverage htmlcov
-    rm -rf dist build
+@clean:
+    -find . -type d -name __pycache__ -exec rm -rf {} +
+    -find . -type f -name "*.pyc" -delete
+    -find . -type d -name "*.egg-info" -exec rm -rf {} +
+    -rm -rf .pytest_cache .coverage htmlcov dist build
 
 # Run the test suite
 [group('tests')]
 test *args:
-    uv run --extra=dev --extra=devdocs pytest {{ args }}
+    {{ uv_dev }} --extra=devdocs pytest {{ args }}
     git checkout -- src/pretalx/locale
 
 # Run tests in parallel (requires pytest-xdist)
@@ -187,9 +199,15 @@ test-coverage *args:
 
 # Show test coverage report in browser
 [group('tests')]
-[working-directory("src")]
 test-coverage-report: test-coverage
-    @{{ if path_exists("src/htmlcov/index.html") == "true" { "open src/htmlcov/index.html 2>/dev/null || xdg-open src/htmlcov/index.html 2>/dev/null || echo 'Coverage report: src/htmlcov/index.html'" } else { "echo 'No coverage report found. Run just test-coverage first.'" } }}
+    #!/usr/bin/env sh
+    if [ -f "src/htmlcov/index.html" ]; then
+        open src/htmlcov/index.html 2>/dev/null || \
+        xdg-open src/htmlcov/index.html 2>/dev/null || \
+        echo "Coverage report: src/htmlcov/index.html"
+    else
+        echo "No coverage report found. Run just test-coverage first."
+    fi
 
 # Run release checks
 [group('release')]

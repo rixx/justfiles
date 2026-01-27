@@ -1,8 +1,14 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Check for required tools
+_ := require("jq")
+
 [private]
 default:
     @just --list
 
-# Add a new CLA signer
+# Add a new CLA signer and update .clabot
+[group('cla')]
 add name path:
     mv "{{ path }}" "clas/{{ name }}.pdf"
     just update
@@ -11,6 +17,7 @@ add name path:
     @echo "Done! Run 'git push' to publish the changes."
 
 # Sync CLA signers from clas/ directory to .clabot
+[group('cla')]
 update:
     #!/usr/bin/env bash
     set -euo pipefail

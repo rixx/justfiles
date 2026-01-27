@@ -1,3 +1,6 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+[private]
 default:
     @just --list
 
@@ -13,3 +16,4 @@ release version:
     git tag -m "Release {{ version }}" {{ version }}
     git push --recurse-submodules=no
     git push --tags --recurse-submodules=no
+    @echo '{{ GREEN }}Release {{ version }} complete{{ NORMAL }}'

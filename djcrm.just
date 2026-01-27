@@ -1,9 +1,15 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: Apache-2.0
 
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Check for required tools
+_ := require("uv")
+
 # Common variables
 python := "uv run python"
 
+[private]
 default:
     @just --list
 
@@ -34,7 +40,7 @@ docs *args="html":
 # Serve the documentation from a live server
 [group('documentation')]
 [working-directory("doc")]
-serve-docs *args="--port 8001":
+docs-serve *args="--port 8001":
     uv run sphinx-autobuild . _build/html {{ args }}
 
 # Update the API documentation
@@ -42,10 +48,10 @@ serve-docs *args="--port 8001":
 api-docs:
     just run spectacular --color --file ../doc/api/schema.yml
 
-# Check codebase for licensing problems
+# Check codebase for licensing compliance
 [group('linting')]
 [working-directory("src")]
-reuse:
+@reuse:
     uv run reuse lint
 
 # Format code with black
@@ -90,33 +96,39 @@ djhtml *args:
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort djhtml flake8
+fmt: black isort djhtml flake8 && _fmt-done
+
+[private]
+@_fmt-done:
+    echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
 
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check djhtml-check flake8
+check: black-check isort-check djhtml-check flake8 && _check-done
 
-# Open Django shell with access to all events
+[private]
+@_check-done:
+    echo '{{ GREEN }}All checks passed{{ NORMAL }}'
+
+# Open Django shell scoped to a specific event
 [group('development')]
 [working-directory("src")]
 [no-exit-message]
 shell event="" *args:
     just run shell --event {{ event }} {{ args }}
 
-# Open Django shell with access to all events
+# Open Django shell with all scopes disabled (unsafe, full database access)
 [group('development')]
 [working-directory("src")]
 [no-exit-message]
 unsafe-shell *args:
     just run shell --unsafe-disable-scopes {{ args }}
 
-# Clean up generated files
+# Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-clean:
-    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-    find . -type f -name "*.pyc" -delete
-    find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-    rm -rf .pytest_cache
-    rm -rf .coverage htmlcov
-    rm -rf dist build
+@clean:
+    -find . -type d -name __pycache__ -exec rm -rf {} +
+    -find . -type f -name "*.pyc" -delete
+    -find . -type d -name "*.egg-info" -exec rm -rf {} +
+    -rm -rf .pytest_cache .coverage htmlcov dist build

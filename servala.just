@@ -1,5 +1,10 @@
 set dotenv-load := true
+set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# Check for required tools
+_ := require("uv")
+
+[private]
 default:
     @just --list
 
@@ -70,26 +75,31 @@ djhtml *args:
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort djhtml flake8
+fmt: black isort djhtml flake8 && _fmt-done
+
+[private]
+@_fmt-done:
+    echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
 
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check djhtml-check flake8
+check: black-check isort-check djhtml-check flake8 && _check-done
 
-# Clean up generated files
-[group('development')]
-clean:
-    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-    find . -type f -name "*.pyc" -delete
-    find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-    rm -rf .pytest_cache
-    rm -rf .coverage htmlcov
-    rm -rf dist build
+[private]
+@_check-done:
+    echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
-# Run the test suite
+# Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-[working-directory(".")]
+@clean:
+    -find . -type d -name __pycache__ -exec rm -rf {} +
+    -find . -type f -name "*.pyc" -delete
+    -find . -type d -name "*.egg-info" -exec rm -rf {} +
+    -rm -rf .pytest_cache .coverage htmlcov dist build
+
+# Bump version using bumpver
+[group('development')]
 release *args:
     uv run bumpver update {{ args }}
 
@@ -112,4 +122,11 @@ test-coverage *args:
 # Show test coverage report in browser
 [group('tests')]
 test-coverage-report: test-coverage
-    @{{ if path_exists("htmlcov/index.html") == "true" { "open htmlcov/index.html 2>/dev/null || xdg-open htmlcov/index.html 2>/dev/null || echo 'Coverage report: htmlcov/index.html'" } else { "echo 'No coverage report found. Run just test-coverage first.'" } }}
+    #!/usr/bin/env sh
+    if [ -f "htmlcov/index.html" ]; then
+        open htmlcov/index.html 2>/dev/null || \
+        xdg-open htmlcov/index.html 2>/dev/null || \
+        echo "Coverage report: htmlcov/index.html"
+    else
+        echo "No coverage report found. Run just test-coverage first."
+    fi

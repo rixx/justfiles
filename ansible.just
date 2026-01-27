@@ -1,3 +1,9 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+# Check for required tools
+_ := require("uv")
+_ := require("ansible")
+
 [private]
 default:
     @just --list
@@ -7,6 +13,7 @@ default:
 fmt:
     uv run ansible-playbook --syntax-check playbooks/*.yml
     uv run ansible-lint roles playbooks host_vars
+    @echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
 # Install external roles from requirements.yml
 [group('setup')]
@@ -27,5 +34,6 @@ adhoc *args:
 
 # Run ansible-vault: just vault edit host_vars/atlas/vault.yml
 [group('deploy')]
+[arg('cmd', pattern='edit|view|encrypt|decrypt|encrypt_string|rekey|create')]
 vault cmd *args:
     uv run ansible-vault {{ cmd }} --vault-password-file=.vault_password.sh {{ args }}
