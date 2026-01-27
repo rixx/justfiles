@@ -5,7 +5,21 @@ movesuffix := "moved-by-justfiles-install"
 # Central mapping of justfiles to their target directories
 # Format: "source.just:target_directory" (one per line)
 mappings := "
+ansible.just:" + home + "/src/ansible
+c3queue.just:" + home + "/src/c3queue
+clabot.just:" + home + "/tmp/clabot-config
+djcrm.just:" + home + "/src/djcrm
+dotfiles.just:" + home + "/.config/dotfiles
+postix.just:" + home + "/src/postix
+pretalx-docker.just:" + home + "/src/pretalx-docker
 pretalx.just:" + home + "/src/pretalx
+pretalx.just:" + home + "/tmp/pretalx
+pretix-plugin.just:" + home + "/src/pretix/src/local/pretix-c3
+pretix.just:" + home + "/src/pretix
+schedule.just:" + home + "/src/schedule
+servala.just:" + home + "/src/servala-portal
+templates.just:" + home + "/doc/gewerbe/templates
+tools.just:" + home + "/src/tools
 "
 
 [private]
