@@ -1,5 +1,9 @@
 set dotenv-load := true
 
+# Common variables
+python := "uv run python"
+src_dir := "src"
+
 [private]
 default:
     @just --list
@@ -20,7 +24,7 @@ install-all:
 [group('development')]
 [working-directory("src")]
 run *args="runserver --skip-checks":
-    uv run python manage.py {{ args }}
+    {{ python }} manage.py {{ args }}
 
 # Update translation files
 [group('development')]
@@ -30,32 +34,33 @@ makemessages:
 
 # Open Django shell with access to all events
 [group('development')]
+[no-exit-message]
 shell *args:
     just run shell
 
 # Format code with black
 [group('linting')]
-black *args="src":
+black *args=src_dir:
     uv run --extra=dev black {{ args }}
 
 # Check code with black (check only)
 [group('linting')]
-black-check *args="src":
+black-check *args=src_dir:
     just black --check {{ args }}
 
 # Check import sorting with isort (check only)
 [group('linting')]
-isort-check *args="src":
+isort-check *args=src_dir:
     just isort --check {{ args }}
 
 # Sort imports with isort
 [group('linting')]
-isort *args="src":
+isort *args=src_dir:
     uv run --extra=dev isort {{ args }}
 
 # Run flake8 linter
 [group('linting')]
-flake8 *args="src":
+flake8 *args=src_dir:
     uv run --extra=dev flake8 {{ args }}
 
 # Check Django templates with djhtml (check only)
@@ -70,35 +75,44 @@ djhtml *args="":
 
 # Run all formatters and linters
 [group('linting')]
+[parallel]
 fmt: black isort djhtml flake8
 
 # Run all code quality checks
 [group('linting')]
+[parallel]
 check: black-check isort-check djhtml-check flake8
 
 # List outdated dependencies
 [group('development')]
 deps-outdated:
-    uv pip list --outdated --format=json | python -c "\
-    import json, sys, tomllib; \
-    from packaging.requirements import Requirement; \
-    outdated = {p['name'].lower(): p for p in json.load(sys.stdin)}; \
-    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', []); \
-    direct = {Requirement(d).name.lower() for d in deps}; \
-    [print(f\"{p['name']}: {p['version']} → {p['latest_version']}\") for name in sorted(outdated.keys() & direct) if (p := outdated[name])]"
+    #!/usr/bin/env python3
+    import json, subprocess, tomllib
+    from packaging.requirements import Requirement
+
+    result = subprocess.run(['uv', 'pip', 'list', '--outdated', '--format=json'], capture_output=True, text=True)
+    outdated = {p['name'].lower(): p for p in json.loads(result.stdout)}
+    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
+    direct = {Requirement(d).name.lower() for d in deps}
+
+    for name in sorted(outdated.keys() & direct):
+        p = outdated[name]
+        print(f"{p['name']}: {p['version']} → {p['latest_version']}")
 
 # Bump a dependency version
 [group('development')]
 deps-bump package version:
-    python -c "\
-    import tomllib; \
-    from pathlib import Path; \
-    from packaging.requirements import Requirement; \
-    p = Path('pyproject.toml'); \
-    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', []); \
-    old = next((d for d in deps if Requirement(d).name.lower() == '{{package}}'.lower()), None); \
-    old and p.write_text(p.read_text().replace(old, f'{Requirement(old).name}~={{version}}'))"
-    uv lock --upgrade-package {{package}}
+    #!/usr/bin/env python3
+    import subprocess, tomllib
+    from pathlib import Path
+    from packaging.requirements import Requirement
+
+    p = Path('pyproject.toml')
+    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
+    old = next((d for d in deps if Requirement(d).name.lower() == '{{ package }}'.lower()), None)
+    if old:
+        p.write_text(p.read_text().replace(old, f'{Requirement(old).name}~={{ version }}'))
+    subprocess.run(['uv', 'lock', '--upgrade-package', '{{ package }}'])
 
 # Clean up generated files
 [group('development')]
@@ -125,4 +139,4 @@ test-parallel n="auto" *args:
 [group('tests')]
 [working-directory("src")]
 test-coverage-report: test
-    open htmlcov/index.html || xdg-open htmlcov/index.html || echo "Coverage report generated in htmlcov/index.html"
+    @{{ if path_exists("src/htmlcov/index.html") == "true" { "open src/htmlcov/index.html 2>/dev/null || xdg-open src/htmlcov/index.html 2>/dev/null || echo 'Coverage report: src/htmlcov/index.html'" } else { "echo 'No coverage report found. Run just test-coverage first.'" } }}

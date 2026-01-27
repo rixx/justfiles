@@ -3,6 +3,8 @@ default:
 
 # Release a new pretalx-docker version
 [group('release')]
+[confirm("This will push tags to origin. Continue?")]
+[arg('version', pattern='\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
 release version:
     git pull
     git -C pretalx fetch

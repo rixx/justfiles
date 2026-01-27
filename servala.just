@@ -69,10 +69,12 @@ djhtml *args:
 
 # Run all formatters and linters
 [group('linting')]
+[parallel]
 fmt: black isort djhtml flake8
 
 # Run all code quality checks
 [group('linting')]
+[parallel]
 check: black-check isort-check djhtml-check flake8
 
 # Clean up generated files
@@ -110,4 +112,4 @@ test-coverage *args:
 # Show test coverage report in browser
 [group('tests')]
 test-coverage-report: test-coverage
-    open htmlcov/index.html || xdg-open htmlcov/index.html || echo "Coverage report generated in htmlcov/index.html"
+    @{{ if path_exists("htmlcov/index.html") == "true" { "open htmlcov/index.html 2>/dev/null || xdg-open htmlcov/index.html 2>/dev/null || echo 'Coverage report: htmlcov/index.html'" } else { "echo 'No coverage report found. Run just test-coverage first.'" } }}

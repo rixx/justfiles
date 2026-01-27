@@ -29,8 +29,10 @@ flake8 *args=".":
 
 # Run all formatters and linters
 [group('linting')]
+[parallel]
 fmt: black isort flake8
 
 # Run all code quality checks
 [group('linting')]
+[parallel]
 check: black-check isort-check flake8

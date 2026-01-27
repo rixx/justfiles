@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: Apache-2.0
 
+# Common variables
+python := "uv run python"
+
 default:
     @just --list
 
@@ -13,7 +16,7 @@ install *args:
 [group('development')]
 [working-directory("src")]
 run *args="runserver --skip-checks":
-    uv run python manage.py {{ args }}
+    {{ python }} manage.py {{ args }}
 
 # Update translation files
 [group('development')]
@@ -86,21 +89,25 @@ djhtml *args:
 
 # Run all formatters and linters
 [group('linting')]
+[parallel]
 fmt: black isort djhtml flake8
 
 # Run all code quality checks
 [group('linting')]
+[parallel]
 check: black-check isort-check djhtml-check flake8
 
 # Open Django shell with access to all events
 [group('development')]
 [working-directory("src")]
+[no-exit-message]
 shell event="" *args:
     just run shell --event {{ event }} {{ args }}
 
 # Open Django shell with access to all events
 [group('development')]
 [working-directory("src")]
+[no-exit-message]
 unsafe-shell *args:
     just run shell --unsafe-disable-scopes {{ args }}
 
