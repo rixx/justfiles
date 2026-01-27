@@ -95,6 +95,36 @@ copy source target_dir:
     echo "Copying: {{source}} -> $TARGET"
     cp "$SOURCE" "$TARGET"
 
+# Pull a single justfile from a project directory back to repo
+[private]
+pull-one source target_dir:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    REPO="{{justfiles}}/{{source}}"
+    TARGET_DIR="{{target_dir}}"
+    TARGET_DIR="${TARGET_DIR%/}"
+    INSTALLED="$TARGET_DIR/justfile"
+
+    # Check if target directory exists
+    if [[ ! -d "$TARGET_DIR" ]]; then
+        exit 0
+    fi
+
+    # Check if installed file exists
+    if [[ ! -f "$INSTALLED" ]]; then
+        exit 0
+    fi
+
+    # Check if files already match
+    if cmp -s "$REPO" "$INSTALLED"; then
+        echo "OK: {{source}} already matches"
+        exit 0
+    fi
+
+    # Copy installed file to repo
+    echo "Pulling: $INSTALLED -> {{source}}"
+    cp "$INSTALLED" "$REPO"
+
 # Install all justfiles to their projects
 install:
     #!/usr/bin/env bash
@@ -102,6 +132,15 @@ install:
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
         just copy "$source" "$target"
+    done <<< '{{mappings}}'
+
+# Pull all modified justfiles from projects back to repo
+pull:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    while IFS=: read -r source target; do
+        [[ -z "$source" ]] && continue
+        just pull-one "$source" "$target"
     done <<< '{{mappings}}'
 
 # Show backup files that would be removed
