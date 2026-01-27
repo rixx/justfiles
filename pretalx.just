@@ -3,10 +3,7 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Check for required tools
 _ := require("uv")
-
-# Common variables
 python := "uv run python"
 uv_dev := "uv run --extra=dev"
 src_dir := "src"
@@ -26,6 +23,14 @@ install *args:
 install-all:
     uv lock --upgrade
     uv sync --all-extras
+
+# Set up development environment (install deps, database, test event, start server)
+[group('development')]
+dev-setup: install-all
+    just run migrate
+    just run createsuperuser
+    just run create_test_event
+    just run runserver
 
 # Install npm dependencies for the schedule editor frontend
 [group('development')]
@@ -104,7 +109,7 @@ api-docs:
 # Check codebase for licensing compliance
 [group('linting')]
 @reuse:
-    uv run reuse lint
+    uvx reuse lint
 
 # Format code with black
 [group('linting')]
