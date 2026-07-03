@@ -47,11 +47,27 @@ default:
     @just --list
 
 # Install all dotfiles (server + GUI)
-[group('install')]
 install-all: install-server install-gui
 
+# Install vim-plug and neovim plugins
+nvim-setup:
+    #!/usr/bin/env bash
+    set -e
+    plug_path="$HOME/.local/share/nvim/site/autoload/plug.vim"
+    if [[ ! -f "$plug_path" ]]; then
+        echo "Installing vim-plug..."
+        curl -fLo "$plug_path" --create-dirs \
+            https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    else
+        echo "vim-plug already installed"
+    fi
+    echo "Installing neovim plugins..."
+    # First run installs plugins (lua requires will fail before plugins exist, that's expected)
+    nvim --headless +"PlugInstall --sync" +qa! 2>/dev/null || true
+    # Second run verifies everything loads correctly
+    nvim --headless +qa
+
 # Install server/CLI configurations (git, vim, tmux, fish, mutt, etc.)
-[group('install')]
 install-server:
     #!/usr/bin/env bash
     set -e
@@ -83,8 +99,10 @@ install-server:
     # File manager (works in CLI too)
     conflink yazi
 
+    # Install vim-plug and plugins
+    just nvim-setup
+
 # Install GUI/desktop configurations (sway, waybar, rofi, kitty, etc.)
-[group('install')]
 install-gui:
     #!/usr/bin/env bash
     set -e

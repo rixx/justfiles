@@ -23,10 +23,14 @@ install-all:
 [working-directory("src")]
 run *args="runserver --skip-checks":
     #!/bin/bash
-    ssh $(whoami)@78.47.176.209 -A -N -L 8088:127.0.0.1:8088 -L 6443:127.0.0.1:6443 &
-    SSH_PID=$!
-    trap "kill $SSH_PID 2>/dev/null" EXIT
-    uv run python manage.py {{ args }}
+    uv run --frozen python manage.py {{ args }}
+
+[group('development')]
+[no-exit-message]
+[positional-arguments]
+[working-directory("src")]
+python *args:
+    uv run --frozen python manage.py shell "$@"
 
 # Update translation files
 [group('development')]
@@ -38,7 +42,7 @@ makemessages:
 [group('linting')]
 [working-directory("src")]
 black *args=".":
-    uv run black {{ args }}
+    uv run --frozen black {{ args }}
 
 # Check code with black (check only)
 [group('linting')]
@@ -54,13 +58,13 @@ isort-check *args=".":
 [group('linting')]
 [working-directory("src")]
 isort *args=".":
-    uv run isort {{ args }}
+    uv run --frozen isort {{ args }}
 
 # Run flake8 linter
 [group('linting')]
 [working-directory("src")]
 flake8 *args=".":
-    uv run flake8 {{ args }}
+    uv run --frozen flake8 {{ args }}
 
 # Check Django templates with djhtml (check only)
 [group('linting')]
@@ -70,16 +74,12 @@ djhtml-check:
 # Format Django templates with djhtml
 [group('linting')]
 djhtml *args:
-    uv run djlint --reformat --format-js --format-css src/ {{ args }}
+    uv run --frozen djlint --reformat --format-js --format-css src/ {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort djhtml flake8 && _fmt-done
-
-[private]
-@_fmt-done:
-    echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
+fmt: black djhtml isort && flake8
 
 # Run all code quality checks
 [group('linting')]
@@ -101,18 +101,13 @@ check: black-check isort-check djhtml-check flake8 && _check-done
 # Bump version using bumpver
 [group('development')]
 release *args:
-    uv run bumpver update {{ args }}
+    uv run --frozen bumpver update {{ args }}
 
 # Run the test suite
 [group('tests')]
 [working-directory(".")]
 test *args:
-    uv run pytest {{ args }}
-
-# Run tests in parallel (requires pytest-xdist)
-[group('tests')]
-test-parallel n="auto" *args:
-    just test -n {{ n }} {{ args }}
+    uv run --frozen pytest {{ args }}
 
 # Run tests with coverage report
 [group('tests')]

@@ -44,9 +44,9 @@ build-wc:
 
 # Build web component and copy to pretalx repository
 [group('build')]
-build-pretalx:
+build-pretalx branch="main":
     npm run build:wc
-    cp dist/pretalx-schedule.umd.cjs ../pretalx/src/pretalx/static/agenda/js/pretalx-schedule.min.js
+    cp dist/pretalx-schedule.umd.cjs ../pretalx/{{ branch }}/src/pretalx/static/agenda/js/pretalx-schedule.min.js
 
 # Build both library and web component
 [group('build')]
@@ -56,6 +56,11 @@ build-all: build build-wc
 [group('linting')]
 lint:
     npm run lint
+
+# Auto-fix linting errors
+[group('linting')]
+fmt:
+    npm run fmt
 
 # Analyze bundle size (opens visualizer)
 [group('build')]

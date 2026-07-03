@@ -1,9 +1,5 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Check for required tools
-_ := require("uv")
-_ := require("ansible")
-
 [private]
 default:
     @just --list
