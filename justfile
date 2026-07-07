@@ -5,6 +5,11 @@ home := home_directory()
 justfiles := justfile_directory()
 movesuffix := "moved-by-justfiles-install"
 
+# Local override of root.just's `strings`: this repo defines the marker tooling,
+# so root.just and this justfile legitimately contain the ⁂ glyph in code and
+# messages. Exclude both so the loop doesn't trap on its own machinery.
+marker_grep := "grep -rIn --exclude=root.just --exclude=justfile --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
+
 # Central mapping of justfiles to their target directories
 # Format: "source.just:target_directory" (one per line)
 mappings := "
@@ -225,3 +230,24 @@ diff:
             echo ""
         fi
     done <<< '{{mappings}}'
+
+# Resolve string markers
+strings:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
+    cd "${dir:-$PWD}"
+    found=
+    while hit=$({{ marker_grep }} | head -n1); [ -n "$hit" ]; do
+        found=1
+        file=${hit%%:*}
+        rest=${hit#*:}
+        ${EDITOR:-nvim} "+${rest%%:*}" -c "let @/='⁂'" -c "set hlsearch" "$file"
+    done
+    if [ -n "$found" ]; then
+        if just --summary 2>/dev/null | tr ' ' '\n' | grep -qx fmt; then
+            just fmt 2>/dev/null || true
+        fi
+    else
+        echo "No ⁂ string markers found."
+    fi

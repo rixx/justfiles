@@ -4,13 +4,15 @@ set quiet
 default:
     just --list
 
-marker_grep := "grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' src doc"
+# Exclude lines where the AI text marker appears among decorative glyphs (e.g. sway/waybar title ornaments)
+# rather than as an AI-authored-text marker.
+marker_grep := "grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
 
 strings:
     #!/usr/bin/env bash
     set -euo pipefail
-    # ⁂ Under `set fallback`, just clears INVOCATION_DIRECTORY and runs us from the
-    # ⁂ parent justfile's dir; the parent `just` process ($PPID) keeps the real cwd.
+    # Under `set fallback`, just clears INVOCATION_DIRECTORY and runs us from the
+    # parent justfile's dir; the parent `just` process ($PPID) keeps the real cwd.
     dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
     cd "${dir:-$PWD}"
     found=
@@ -21,7 +23,11 @@ strings:
         ${EDITOR:-nvim} "+${rest%%:*}" -c "let @/='⁂'" -c "set hlsearch" "$file"
     done
     if [ -n "$found" ]; then
-        just fmt
+        # Reformat if this project defines a `fmt` recipe, but never let a missing
+        # recipe or a formatting error fail the strings run.
+        if just --summary 2>/dev/null | tr ' ' '\n' | grep -qx fmt; then
+            just fmt 2>/dev/null || true
+        fi
     else
         echo "No ⁂ string markers found."
     fi
