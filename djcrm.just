@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
+set fallback := true
 
 # Check for required tools
 _ := require("uv")

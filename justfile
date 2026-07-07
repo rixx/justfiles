@@ -1,4 +1,5 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
+set fallback := true
 
 home := home_directory()
 justfiles := justfile_directory()
