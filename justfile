@@ -8,6 +8,7 @@ movesuffix := "moved-by-justfiles-install"
 # Central mapping of justfiles to their target directories
 # Format: "source.just:target_directory" (one per line)
 mappings := "
+root.just:" + home + "
 ansible.just:" + home + "/src/ansible
 c3queue.just:" + home + "/src/c3queue
 clabot.just:" + home + "/src/clabot-config
