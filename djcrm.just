@@ -4,9 +4,6 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set fallback := true
 
-# Check for required tools
-_ := require("uv")
-
 # Common variables
 python := "uv run python"
 

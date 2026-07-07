@@ -2,9 +2,6 @@ set dotenv-load := true
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set fallback := true
 
-# Check for required tools
-_ := require("uv")
-
 # Common variables
 python := "uv run --frozen python"
 uv_dev := "uv run --frozen --extra=dev"

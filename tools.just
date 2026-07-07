@@ -1,9 +1,6 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set fallback := true
 
-# Check for required tools
-_ := require("uvx")
-
 [private]
 default:
     @just --list
