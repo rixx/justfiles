@@ -4,8 +4,8 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 _ := require("uv")
-python := "uv run python"
-uv_dev := "uv run --extra=dev"
+python := "uv run --frozen python"
+uv_dev := "uv run --frozen --extra=dev"
 src_dir := "src"
 
 [private]
@@ -92,14 +92,14 @@ makemessages:
 [group('documentation')]
 [working-directory("doc")]
 docs *args="html":
-    uv run make {{ args }}
+    uv run --frozen make {{ args }}
 
 # Serve the documentation from a live server
 [group('documentation')]
 [working-directory("doc")]
 docs-serve *args="--port 8001":
     rm -rf _build/html
-    uv run sphinx-autobuild . _build/html {{ args }}
+    uv run --frozen sphinx-autobuild . _build/html {{ args }}
 
 # Update the API documentation
 [group('documentation')]
@@ -217,9 +217,9 @@ test-coverage-report: test-coverage
 # Run release checks
 [group('release')]
 release-checks:
-    uv run check-manifest
+    uv run --frozen check-manifest
     {{ python }} -m build
-    uv run twine check dist/*
+    uv run --frozen twine check dist/*
     unzip -l dist/pretalx*whl | grep frontend || exit 1
     unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
     @echo "{{ GREEN }}All release checks successful{{ NORMAL }}"

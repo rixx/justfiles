@@ -11,9 +11,9 @@ default:
 [group('development')]
 [working-directory("src")]
 @run *args="runserver":
-    uv run --extra=dev manage.py {{ args }}
+    uv run --frozen --extra=dev manage.py {{ args }}
 
 # Start a debugging SMTP server on localhost:1025
 [group('development')]
 @mail:
-    uv run python -m aiosmtpd -n -l localhost:1025
+    uv run --frozen python -m aiosmtpd -n -l localhost:1025

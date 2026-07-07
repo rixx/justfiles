@@ -18,10 +18,10 @@ install *args:
 [group('development')]
 [working-directory("src")]
 run:
-    uv run python -c "from aiohttp import web; from c3queue import main; web.run_app(main(), port=8001)"
+    uv run --frozen python -c "from aiohttp import web; from c3queue import main; web.run_app(main(), port=8001)"
 
 # Run the production server with gunicorn on unix socket
 [group('production')]
 [working-directory("src")]
 server:
-    uv run gunicorn --bind unix:/run/gunicorn/c3queue --worker-class aiohttp.GunicornWebWorker c3queue:main
+    uv run --frozen gunicorn --bind unix:/run/gunicorn/c3queue --worker-class aiohttp.GunicornWebWorker c3queue:main

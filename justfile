@@ -9,7 +9,7 @@ movesuffix := "moved-by-justfiles-install"
 mappings := "
 ansible.just:" + home + "/src/ansible
 c3queue.just:" + home + "/src/c3queue
-clabot.just:" + home + "/tmp/clabot-config
+clabot.just:" + home + "/src/clabot-config
 djcrm.just:" + home + "/src/djcrm
 dotfiles.just:" + home + "/.config/dotfiles
 postix.just:" + home + "/src/postix

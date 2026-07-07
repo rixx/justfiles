@@ -5,8 +5,8 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 _ := require("uv")
 
 # Common variables
-python := "uv run python"
-uv_dev := "uv run --extra=dev"
+python := "uv run --frozen python"
+uv_dev := "uv run --frozen --extra=dev"
 src_dir := "src"
 
 [private]
