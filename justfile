@@ -35,31 +35,34 @@ default:
 status:
     #!/usr/bin/env bash
     set -euo pipefail
-    # Build associative array of mappings
-    declare -A mapping_targets
+    # Check each source -> target mapping (a source may map to several targets)
+    declare -A seen_sources
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
         target="${target%/}"
-        mapping_targets["$source"]="$target"
-    done <<< '{{mappings}}'
+        seen_sources["$source"]=1
+        repo="{{justfiles}}/$source"
+        installed="$target/justfile"
 
-    # Check all .just files
-    for f in "{{justfiles}}"/*.just; do
-        [[ -f "$f" ]] || continue
-        source=$(basename "$f")
-        target="${mapping_targets[$source]:-}"
-
-        if [[ -z "$target" ]]; then
-            echo "? $source: not in mappings"
+        if [[ ! -f "$repo" ]]; then
+            echo "? $source -> $target (source missing)"
         elif [[ ! -d "$target" ]]; then
             echo "⏭ $source -> $target (dir missing)"
-        elif [[ ! -f "$target/justfile" ]]; then
+        elif [[ ! -f "$installed" ]]; then
             echo "✗ $source -> $target (not installed)"
-        elif cmp -s "$f" "$target/justfile"; then
+        elif cmp -s "$repo" "$installed"; then
             echo "✓ $source -> $target"
         else
             echo "⚠ $source -> $target (differs)"
         fi
+    done <<< '{{mappings}}'
+
+    # Report .just files not referenced by any mapping
+    for f in "{{justfiles}}"/*.just; do
+        [[ -f "$f" ]] || continue
+        source=$(basename "$f")
+        [[ -n "${seen_sources[$source]:-}" ]] && continue
+        echo "? $source: not in mappings"
     done
 
 # Copy a single justfile to a project directory
