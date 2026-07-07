@@ -53,8 +53,8 @@ default:
 status:
     #!/usr/bin/env bash
     set -euo pipefail
-    # Check each source -> target mapping (a source may map to several targets)
     declare -A seen_sources
+    problems=()
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
         target="${target%/}"
@@ -63,25 +63,30 @@ status:
         installed="$target/justfile"
 
         if [[ ! -f "$repo" ]]; then
-            echo "? $source -> $target (source missing)"
+            problems+=("? $source -> $target (source missing)")
         elif [[ ! -d "$target" ]]; then
-            echo "⏭ $source -> $target (dir missing)"
+            : # project not present here; not a problem
         elif [[ ! -f "$installed" ]]; then
-            echo "✗ $source -> $target (not installed)"
+            problems+=("✗ $source -> $target (not installed)")
         elif cmp -s "$repo" "$installed"; then
-            echo "✓ $source -> $target"
+            : # up to date
         else
-            echo "⚠ $source -> $target (differs)"
+            problems+=("⚠ $source -> $target (differs)")
         fi
     done <<< '{{mappings}}'
 
-    # Report .just files not referenced by any mapping
     for f in "{{justfiles}}"/*.just; do
         [[ -f "$f" ]] || continue
         source=$(basename "$f")
         [[ -n "${seen_sources[$source]:-}" ]] && continue
-        echo "? $source: not in mappings"
+        problems+=("? $source: not in mappings")
     done
+
+    if [[ ${#problems[@]} -eq 0 ]]; then
+        echo "All justfiles up to date."
+    else
+        printf '%s\n' "${problems[@]}"
+    fi
 
 # Copy a single justfile to a project directory
 [private]
@@ -107,7 +112,7 @@ copy source target_dir:
 
     # Check if target already matches source
     if [[ -f "$TARGET" ]] && cmp -s "$SOURCE" "$TARGET"; then
-        echo "OK: {{source}} already up to date"
+        echo "OK: {{source}} -> $TARGET already up to date"
         exit 0
     fi
 
