@@ -12,11 +12,6 @@ fmt:
     uv run --frozen ansible-lint roles playbooks host_vars
     @echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
-# Install external roles from requirements.yml
-[group('setup')]
-install:
-    uv run --frozen ansible-galaxy install -r requirements.yml -p external_roles --force
-
 # Deploy to a server: just deploy playbooks/atlas.yml --tags pretalxupdate
 [group('deploy')]
 deploy *args:
