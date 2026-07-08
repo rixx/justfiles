@@ -3,7 +3,7 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
-set fallback := true
+set fallback
 
 python := "uv run --frozen python"
 uv_dev := "uv run --frozen --extra=dev"
@@ -15,23 +15,28 @@ default:
     just --list
 
 # Install dependencies (use --extras to include dev, devdocs, postgres)
-[group('development')]
+[group('dependencies')]
 install *args:
     # Use --inexact so locally-installed plugins (via `just install-plugin`) and
     # their transitive deps survive the sync.
     uv sync --inexact {{ args }}
 
 # Install all dependencies (extras and npm)
-[group('development')]
+[group('dependencies')]
 install-all:
     uv sync --inexact --all-extras
     just install-npm
 
+# Install a plugin
+[group('dependencies')]
+install-plugin path:
+    uv pip install -e {{ path }}
+
 # Upgrade locked dependencies to their latest compatible versions
-[group('development')]
-upgrade *args:
+[group('dependencies')]
+deps-upgrade:
     uv lock --upgrade
-    uv sync --inexact {{ args }}
+    uv sync --inexact --all-extras
     {{ npm }} install
 
 # Set up development environment (install deps, database, test event, start server)
@@ -46,7 +51,7 @@ dev-setup: install-all
     just run
 
 # Install npm dependencies for the frontend apps
-[group('development')]
+[group('dependencies')]
 install-npm:
     {{ npm }} ci
 
@@ -59,15 +64,10 @@ npm *args:
 # Run the public schedule app dev server / widget test harness
 [group('development')]
 dev-schedule:
-    {{ npm }} run dev:schedule
-
-# Install a plugin
-[group('development')]
-install-plugin path:
-    uv pip install -e {{ path }}
+    just npm dev:schedule
 
 # Check for outdated dependencies
-[group('development')]
+[group('dependencies')]
 [script('python3')]
 deps-outdated:
     import json, subprocess, tomllib
@@ -83,7 +83,7 @@ deps-outdated:
         print(f"{p['name']}: {p['version']} → {p['latest_version']}")
 
 # Bump a dependency version
-[group('development')]
+[group('dependencies')]
 [script('python3')]
 deps-bump package version:
     import subprocess, tomllib
@@ -110,7 +110,6 @@ run *args="devserver --skip-checks":
 
 # Update translation files
 [group('development')]
-[working-directory("src")]
 makemessages:
     just run rebuild --npm-install
     just run makemessages --keep-pot --all
@@ -121,37 +120,35 @@ makemessages:
 worker:
     {{ uv_dev }} celery -A pretalx.celery_app worker -l info
 
-# Clean documentation build artifacts
-[group('documentation')]
+[private]
+docs-clean:
+    rm -rf doc/_build/*
+
+[private]
 [working-directory("doc")]
-@docs-clean:
-    rm -rf _build/*
+sphinx *args:
+    {{ uv_devdocs }} python -m sphinx {{ args }}
 
 # Build documentation (use `just docs-build dirhtml` for production)
 [group('documentation')]
-[working-directory("doc")]
 docs-build format="html" *args:
     just docs-clean
-    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
+    just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
 
-# Build and deploy documentation to a target directory
-[group('documentation')]
+[private]
 docs-deploy target:
     just docs-build dirhtml
     rsync -avu --delete doc/_build/dirhtml/ {{ target }}
 
-# Check documentation for broken links
-[group('documentation')]
-[working-directory("doc")]
+[private]
 docs-linkcheck:
-    {{ uv_devdocs }} python -m sphinx -b linkcheck -d _build/doctrees . _build/linkcheck
+    just sphinx -b linkcheck -d _build/doctrees . _build/linkcheck
 
 # Serve the documentation from a live server
 [group('documentation')]
-[working-directory("doc")]
 docs-serve *args="--port 8001":
-    rm -rf _build/html
-    {{ uv_devdocs }} sphinx-autobuild . _build/html -q {{ args }}
+    just docs-clean
+    {{ uv_devdocs }} sphinx-autobuild doc doc/_build/html -q {{ args }}
 
 # Update the API documentation
 [group('documentation')]
@@ -163,8 +160,7 @@ api-docs:
 reuse:
     uvx reuse lint
 
-# Format Django templates with djangofmt.
-[group('linting')]
+[private]
 djangofmt *args="":
     # Ignore powered_by.html to keep license warning in grep results
     -{{ uv_dev }} djangofmt \
@@ -173,72 +169,66 @@ djangofmt *args="":
         --extend-exclude src/pretalx/common/templates/common/powered_by.html \
         {{ args }} .
 
-[group('linting')]
+[private]
 djangofmt-check:
     just djangofmt
     git diff --exit-code -- '*.html' || (echo "HTML templates are not formatted. Run 'just djangofmt' to fix." && exit 1)
 
-# Run ruff format
-[group('linting')]
-format *args="":
+[private]
+ruff-format *args="":
     {{ uv_dev }} ruff format {{ args }}
 
-# Run ruff check
-[group('linting')]
-check *args="":
+[private]
+ruff-check *args="":
     {{ uv_dev }} ruff check {{ args }}
 
-# Private recipe to use ruff in [parallel] context
+# Needed to use ruff in [parallel] context because both commands write files
 [private]
 _ruff-fix:
-    {{ uv_dev }} ruff check --fix
-    {{ uv_dev }} ruff format
+    just ruff-check --fix
+    just ruff-format
 
-# Run all formatters and linters
+# Run formatters and linters
 [group('linting')]
 [parallel]
 fmt: _ruff-fix djangofmt noqa-reasons-check
 
-# Run all code quality checks
+# Run formatters and linters in check mode
 [group('linting')]
 [parallel]
-fmt-check: (format "--check") check noqa-reasons-check
+fmt-check: (ruff-format "--check") ruff-check djangofmt-check noqa-reasons-check
 
 # Lint and autofix the frontend apps with eslint
 [group('linting')]
 fmt-npm:
-    {{ npm }} run lint:fix
+    just npm lint:fix
 
 # Lint the frontend apps with eslint without autofixing
 [group('linting')]
 fmt-npm-check:
-    {{ npm }} run lint
+    just npm lint
 
-# Check that every `# noqa: PLC0415` carries an allowed reason
-[group('linting')]
+[private]
 noqa-reasons-check:
     {{ python }} tools/check_plc0415_reasons.py
 
-# Check for untrimmed blocktranslate tags
-[group('linting')]
+[private]
 blocktranslate-check:
     ! git grep ' blocktranslate ' -- '*.html' | grep -v trimmed
 
-# Check that no unresolved string markers remain
-[group('linting')]
+[private]
 marker-check:
     ! grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' src doc
 
 # Check documentation for spelling errors
 [group('documentation')]
-[working-directory("doc")]
 docs-spelling:
-    {{ uv_devdocs }} python -m sphinx -b spelling -d _build/doctrees . _build/spelling
-    ! find _build -type f -name '*.spelling' | grep -q .
+    just sphinx -b spelling -d _build/doctrees . _build/spelling
+    ! find doc/_build -type f -name '*.spelling' | grep -q .
 
 # Run most CI checks
 [group('tests')]
-ci: fmt-check djangofmt-check reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && _ci-done
+ci: fmt-check reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && _ci-done
 
 [private]
 _ci-done:
@@ -254,9 +244,8 @@ shell event="" *args:
 [group('development')]
 [no-exit-message]
 [positional-arguments]
-[working-directory("src")]
 python *args:
-    {{ python }} manage.py shell --no-pretalx-information --unsafe-disable-scopes "$@"
+    just run shell --no-pretalx-information --unsafe-disable-scopes "$@"
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
@@ -298,8 +287,7 @@ test-coverage-report: test-coverage
         echo "No coverage report found. Run just test-coverage first."
     fi
 
-# Verify the built wheel is well-formed (check-manifest, twine, contents)
-[group('release')]
+[private]
 release-check-package:
     uv pip install check-manifest twine wheel
     uv run check-manifest
@@ -314,8 +302,7 @@ release-check-package:
     grep -q 'pretalx/static.dist/' dist/.wheel-list.txt && { echo "collected static.dist must not ship in the wheel (operators run rebuild)"; exit 1; } || true
     echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
 
-# Verify a clean-tree source rebuild produces a *current* frontend (needs npm)
-[group('release')]
+[private]
 release-check-rebuild:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -342,8 +329,7 @@ release-check-rebuild:
     test -f "$PRETALX_FILESYSTEM_STATIC/pretalx-manifest.json"
     echo "{{ GREEN }}Clean-tree rebuild check successful{{ NORMAL }}"
 
-# Build a venv from the wheel and verify it ships bundles + rebuilds without npm
-[group('release')]
+[private]
 release-check-wheel:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -390,7 +376,7 @@ release-check-wheel:
         "$PRETALX_FILESYSTEM_STATIC/agenda/js/pretalx-schedule.min.js"
     echo "{{ GREEN }}Installed-wheel checks successful{{ NORMAL }}"
 
-# Run the full release verification suite (matches CI exactly)
+# Run the full release verification suite (matches CI)
 [group('release')]
 release-check-all: release-check-package release-check-rebuild release-check-wheel
     echo "{{ GREEN }}All release verification successful{{ NORMAL }}"
