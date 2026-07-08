@@ -417,9 +417,9 @@ next-dev-version version:
     print(f'{parts[0]}.{int(parts[1]) + 1}.0.dev0')
 
 # Release a new pretalx version (tag form: v2026.1.0)
-[group('release')]
-[confirm("This will publish to PyPI and push tags. Continue?")]
 [arg('version', pattern='v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
+[confirm("This will publish to PyPI and push tags. Continue?")]
+[group('release')]
 release version:
     uv pip install build check-manifest twine wheel
     just set-version {{ trim_start_match(version, "v") }}

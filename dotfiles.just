@@ -70,9 +70,9 @@ nvim-setup:
 [script('bash')]
 install-server:
     set -e
-    DOTFILES="{{dotfiles}}"
-    movesuffix="{{movesuffix}}"
-    eval '{{install_lib}}'
+    DOTFILES="{{ dotfiles }}"
+    movesuffix="{{ movesuffix }}"
+    eval '{{ install_lib }}'
 
     # Version control
     conflink git
@@ -105,9 +105,9 @@ install-server:
 [script('bash')]
 install-gui:
     set -e
-    DOTFILES="{{dotfiles}}"
-    movesuffix="{{movesuffix}}"
-    eval '{{install_lib}}'
+    DOTFILES="{{ dotfiles }}"
+    movesuffix="{{ movesuffix }}"
+    eval '{{ install_lib }}'
 
     # Wayland/Sway
     conflink sway

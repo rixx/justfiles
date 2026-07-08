@@ -1,4 +1,4 @@
-set dotenv-load := true
+set dotenv-load
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
 set fallback
@@ -16,8 +16,8 @@ install-all:
 
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
-[working-directory("src")]
 [script('bash')]
+[working-directory("src")]
 run *args="runserver --skip-checks":
     uv run --frozen python manage.py {{ args }}
 

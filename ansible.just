@@ -23,7 +23,7 @@ adhoc *args:
     uv run --frozen ansible --vault-password-file=.vault_password.sh {{ args }}
 
 # Run ansible-vault: just vault edit host_vars/atlas/vault.yml
-[group('deploy')]
 [arg('cmd', pattern='edit|view|encrypt|decrypt|encrypt_string|rekey|create')]
+[group('deploy')]
 vault cmd *args:
     uv run --frozen ansible-vault {{ cmd }} --vault-password-file=.vault_password.sh {{ args }}

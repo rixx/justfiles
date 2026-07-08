@@ -7,10 +7,10 @@ set default-list
 # Runs lualatex twice to resolve references (page numbers, etc.)
 [script('bash')]
 build file:
-    cd "{{parent_directory(file)}}"
-    lualatex "{{file_name(file)}}"
-    lualatex "{{file_name(file)}}"
-    base="{{file_stem(file)}}"
+    cd "{{ parent_directory(file) }}"
+    lualatex "{{ file_name(file) }}"
+    lualatex "{{ file_name(file) }}"
+    base="{{ file_stem(file) }}"
     rm -f "$base".aux "$base".log "$base".out "$base".toc "$base".lof "$base".lot "$base".fls "$base".fdb_latexmk "$base".synctex.gz
 
 # Copy compiled documents to pretalx and legal repositories

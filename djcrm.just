@@ -109,15 +109,15 @@ check-done:
 
 # Open Django shell scoped to a specific event
 [group('development')]
-[working-directory("src")]
 [no-exit-message]
+[working-directory("src")]
 shell event="" *args:
     just run shell --event {{ event }} {{ args }}
 
 # Open Django shell with all scopes disabled (unsafe, full database access)
 [group('development')]
-[working-directory("src")]
 [no-exit-message]
+[working-directory("src")]
 unsafe-shell *args:
     just run shell --unsafe-disable-scopes {{ args }}
 

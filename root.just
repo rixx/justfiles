@@ -28,4 +28,3 @@ strings:
     else
         echo "No ⁂ string markers found."
     fi
-

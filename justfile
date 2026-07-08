@@ -56,7 +56,7 @@ status:
         [[ -z "$source" ]] && continue
         target="${target%/}"
         seen_sources["$source"]=1
-        repo="{{justfiles}}/$source"
+        repo="{{ justfiles }}/$source"
         installed="$target/justfile"
 
         if [[ ! -f "$repo" ]]; then
@@ -70,9 +70,9 @@ status:
         else
             problems+=("⚠ $source -> $target (differs)")
         fi
-    done <<< '{{mappings}}'
+    done <<< '{{ mappings }}'
 
-    for f in "{{justfiles}}"/*.just; do
+    for f in "{{ justfiles }}"/*.just; do
         [[ -f "$f" ]] || continue
         source=$(basename "$f")
         [[ -n "${seen_sources[$source]:-}" ]] && continue
@@ -90,20 +90,20 @@ status:
 [script('bash')]
 copy source target_dir:
     set -euo pipefail
-    SOURCE="{{justfiles}}/{{source}}"
-    TARGET_DIR="{{target_dir}}"
+    SOURCE="{{ justfiles }}/{{ source }}"
+    TARGET_DIR="{{ target_dir }}"
     TARGET_DIR="${TARGET_DIR%/}"  # Remove trailing slash if present
     TARGET="$TARGET_DIR/justfile"
 
     # Check if source exists
     if [[ ! -f "$SOURCE" ]]; then
-        echo "Error: Source file {{source}} does not exist in repo"
+        echo "Error: Source file {{ source }} does not exist in repo"
         exit 1
     fi
 
     # Check if target directory exists
     if [[ ! -d "$TARGET_DIR" ]]; then
-        echo "Info: $TARGET_DIR does not exist, skipping {{source}}"
+        echo "Info: $TARGET_DIR does not exist, skipping {{ source }}"
         exit 0
     fi
 
@@ -114,12 +114,12 @@ copy source target_dir:
 
     # Back up existing file if present
     if [[ -e "$TARGET" || -L "$TARGET" ]]; then
-        echo "Moving existing $TARGET to $TARGET.{{movesuffix}}"
-        mv "$TARGET" "$TARGET.{{movesuffix}}"
+        echo "Moving existing $TARGET to $TARGET.{{ movesuffix }}"
+        mv "$TARGET" "$TARGET.{{ movesuffix }}"
     fi
 
     # Copy file
-    echo "Copying: {{source}} -> $TARGET"
+    echo "Copying: {{ source }} -> $TARGET"
     cp "$SOURCE" "$TARGET"
 
 # Pull a single justfile from a project directory back to repo
@@ -127,8 +127,8 @@ copy source target_dir:
 [script('bash')]
 pull-one source target_dir:
     set -euo pipefail
-    REPO="{{justfiles}}/{{source}}"
-    TARGET_DIR="{{target_dir}}"
+    REPO="{{ justfiles }}/{{ source }}"
+    TARGET_DIR="{{ target_dir }}"
     TARGET_DIR="${TARGET_DIR%/}"
     INSTALLED="$TARGET_DIR/justfile"
 
@@ -144,12 +144,12 @@ pull-one source target_dir:
 
     # Check if files already match
     if cmp -s "$REPO" "$INSTALLED"; then
-        echo "OK: {{source}} already matches"
+        echo "OK: {{ source }} already matches"
         exit 0
     fi
 
     # Copy installed file to repo
-    echo "Pulling: $INSTALLED -> {{source}}"
+    echo "Pulling: $INSTALLED -> {{ source }}"
     cp "$INSTALLED" "$REPO"
 
 # Install all justfiles to their projects
@@ -160,7 +160,7 @@ install:
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
         just copy "$source" "$target"
-    done <<< '{{mappings}}'
+    done <<< '{{ mappings }}'
 
 # Pull all modified justfiles from projects back to repo
 [group('sync')]
@@ -170,7 +170,7 @@ pull:
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
         just pull-one "$source" "$target"
-    done <<< '{{mappings}}'
+    done <<< '{{ mappings }}'
 
 # Show backup files that would be removed
 [group('cleanup')]
@@ -180,16 +180,16 @@ clean:
     found=()
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
-        backup="$target/justfile.{{movesuffix}}"
+        backup="$target/justfile.{{ movesuffix }}"
         if [[ -f "$backup" ]]; then
             found+=("$backup")
         fi
-    done <<< '{{mappings}}'
+    done <<< '{{ mappings }}'
 
     if [[ ${#found[@]} -eq 0 ]]; then
         echo "No backup files found"
     else
-        echo "Backup files (*.{{movesuffix}}):"
+        echo "Backup files (*.{{ movesuffix }}):"
         for f in "${found[@]}"; do
             echo "  $f"
         done
@@ -204,12 +204,12 @@ clean-confirm:
     set -euo pipefail
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
-        backup="$target/justfile.{{movesuffix}}"
+        backup="$target/justfile.{{ movesuffix }}"
         if [[ -f "$backup" ]]; then
             rm "$backup"
             echo "Removed: $backup"
         fi
-    done <<< '{{mappings}}'
+    done <<< '{{ mappings }}'
 
 # Show differences between repo and installed justfiles
 [group('status')]
@@ -220,7 +220,7 @@ diff:
         [[ -z "$source" ]] && continue
         target="${target%/}"
         installed="$target/justfile"
-        repo="{{justfiles}}/$source"
+        repo="{{ justfiles }}/$source"
 
         [[ ! -d "$target" ]] && continue
         [[ ! -f "$installed" ]] && continue
@@ -230,7 +230,27 @@ diff:
             diff -u "$installed" "$repo" || true
             echo ""
         fi
-    done <<< '{{mappings}}'
+    done <<< '{{ mappings }}'
+
+# Format every justfile in this repo
+[group('formatting')]
+[script('bash')]
+fmt:
+    set -euo pipefail
+    for f in *.just justfile; do
+        just --fmt -f "$f"
+    done
+
+# Check that every justfile is formatted
+[group('formatting')]
+[script('bash')]
+fmt-check:
+    set -euo pipefail
+    rc=0
+    for f in *.just justfile; do
+        just --fmt --check -f "$f" || { echo "⁂ not formatted: $f"; rc=1; }
+    done
+    exit "$rc"
 
 # Resolve string markers
 [script('bash')]

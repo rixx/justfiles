@@ -1,4 +1,4 @@
-set dotenv-load := true
+set dotenv-load
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
 set fallback
