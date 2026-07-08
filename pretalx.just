@@ -8,19 +8,20 @@ set fallback := true
 python := "uv run --frozen python"
 uv_dev := "uv run --frozen --extra=dev"
 uv_devdocs := "uv run --frozen --extra=devdocs"
+npm := "cd src/pretalx/frontend && npm"
 
 [private]
 default:
     just --list
 
-# Install dependencies (use --extras to include e.g. dev, devdocs, postgres)
+# Install dependencies (use --extras to include dev, devdocs, postgres)
 [group('development')]
 install *args:
     # Use --inexact so locally-installed plugins (via `just install-plugin`) and
     # their transitive deps survive the sync.
     uv sync --inexact {{ args }}
 
-# Install all dependencies (dev, devdocs, postgres)
+# Install all dependencies (extras and npm)
 [group('development')]
 install-all:
     uv sync --inexact --all-extras
@@ -31,6 +32,7 @@ install-all:
 upgrade *args:
     uv lock --upgrade
     uv sync --inexact {{ args }}
+    {{ npm }} install
 
 # Set up development environment (install deps, database, test event, start server)
 [group('development')]
@@ -45,28 +47,19 @@ dev-setup: install-all
 
 # Install npm dependencies for the frontend apps
 [group('development')]
-[working-directory("src/pretalx/frontend")]
 install-npm:
-    npm ci
-
-# Install/refresh npm dependencies and regenerate the lockfile
-[group('development')]
-[working-directory("src/pretalx/frontend")]
-install-npm-update:
-    npm install
+    {{ npm }} ci
 
 # Run an npm script in the frontend project (e.g. `just npm build:wc`)
 [group('development')]
-[working-directory("src/pretalx/frontend")]
 [positional-arguments]
 npm *args:
-    npm run "$@"
+    {{ npm }} run "$@"
 
 # Run the public schedule app dev server / widget test harness
 [group('development')]
-[working-directory("src/pretalx/frontend")]
 dev-schedule:
-    npm run dev:schedule
+    {{ npm }} run dev:schedule
 
 # Install a plugin
 [group('development')]
@@ -213,15 +206,13 @@ fmt-check: (format "--check") check noqa-reasons-check
 
 # Lint and autofix the frontend apps with eslint
 [group('linting')]
-[working-directory("src/pretalx/frontend")]
 fmt-npm:
-    npm run lint:fix
+    {{ npm }} run lint:fix
 
 # Lint the frontend apps with eslint without autofixing
 [group('linting')]
-[working-directory("src/pretalx/frontend")]
 fmt-npm-check:
-    npm run lint
+    {{ npm }} run lint
 
 # Check that every `# noqa: PLC0415` carries an allowed reason
 [group('linting')]
