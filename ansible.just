@@ -1,9 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Run syntax check and ansible-lint on roles, playbooks, and host_vars
 [group('quality')]

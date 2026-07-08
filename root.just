@@ -1,15 +1,12 @@
 set quiet
-
-[private]
-default:
-    just --list
+set default-list
 
 # Exclude lines where the AI text marker appears among decorative glyphs (e.g. sway/waybar title ornaments)
 # rather than as an AI-authored-text marker.
 marker_grep := "grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
 
+[script('bash')]
 strings:
-    #!/usr/bin/env bash
     set -euo pipefail
     # Under `set fallback`, just clears INVOCATION_DIRECTORY and runs us from the
     # parent justfile's dir; the parent `just` process ($PPID) keeps the real cwd.

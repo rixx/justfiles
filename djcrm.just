@@ -2,14 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
+set quiet
+set fallback
+set default-list
 
 # Common variables
 python := "uv run python"
-
-[private]
-default:
-    @just --list
 
 # Install dependencies (use --extras to include e.g. dev, devdocs, postgres, redis)
 [group('development')]
@@ -49,7 +47,7 @@ api-docs:
 # Check codebase for licensing compliance
 [group('linting')]
 [working-directory("src")]
-@reuse:
+reuse:
     uv run reuse lint
 
 # Format code with black
@@ -94,19 +92,19 @@ djhtml *args:
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort djhtml flake8 && _fmt-done
+fmt: black isort djhtml flake8 && fmt-done
 
 [private]
-@_fmt-done:
+fmt-done:
     echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
 
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check djhtml-check flake8 && _check-done
+check: black-check isort-check djhtml-check flake8 && check-done
 
 [private]
-@_check-done:
+check-done:
     echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
 # Open Django shell scoped to a specific event
@@ -125,7 +123,7 @@ unsafe-shell *args:
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-@clean:
+clean:
     -find . -type d -name __pycache__ -exec rm -rf {} +
     -find . -type f -name "*.pyc" -delete
     -find . -type d -name "*.egg-info" -exec rm -rf {} +

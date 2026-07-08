@@ -1,11 +1,9 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
+set quiet
+set fallback
+set default-list
 
 export BIN := "../../.venv/bin"
-
-[private]
-default:
-    @just --list
 
 # Run all code quality checks (black, isort, flake8)
 [group('linting')]
@@ -29,8 +27,8 @@ run *args="python":
 
 # Run test suite (runs with coverage if no args given)
 [group('tests')]
+[script('bash')]
 test *args="":
-    #!/usr/bin/env bash
     if [[ -n "{{ args }}" ]]; then
         $BIN/pytest {{ args }}
     else

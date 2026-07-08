@@ -1,10 +1,8 @@
 set dotenv-load := true
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Install and update dependencies
 [group('development')]

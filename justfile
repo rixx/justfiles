@@ -1,5 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
+set quiet
+set fallback
+set default-list
 
 home := home_directory()
 justfiles := justfile_directory()
@@ -43,14 +45,10 @@ templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
 "
 
-[private]
-default:
-    @just --list
-
 # Check status of all justfiles (installed, differs, missing)
 [group('status')]
+[script('bash')]
 status:
-    #!/usr/bin/env bash
     set -euo pipefail
     declare -A seen_sources
     problems=()
@@ -89,8 +87,8 @@ status:
 
 # Copy a single justfile to a project directory
 [private]
+[script('bash')]
 copy source target_dir:
-    #!/usr/bin/env bash
     set -euo pipefail
     SOURCE="{{justfiles}}/{{source}}"
     TARGET_DIR="{{target_dir}}"
@@ -126,8 +124,8 @@ copy source target_dir:
 
 # Pull a single justfile from a project directory back to repo
 [private]
+[script('bash')]
 pull-one source target_dir:
-    #!/usr/bin/env bash
     set -euo pipefail
     REPO="{{justfiles}}/{{source}}"
     TARGET_DIR="{{target_dir}}"
@@ -156,8 +154,8 @@ pull-one source target_dir:
 
 # Install all justfiles to their projects
 [group('sync')]
+[script('bash')]
 install:
-    #!/usr/bin/env bash
     set -euo pipefail
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
@@ -166,8 +164,8 @@ install:
 
 # Pull all modified justfiles from projects back to repo
 [group('sync')]
+[script('bash')]
 pull:
-    #!/usr/bin/env bash
     set -euo pipefail
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
@@ -176,8 +174,8 @@ pull:
 
 # Show backup files that would be removed
 [group('cleanup')]
+[script('bash')]
 clean:
-    #!/usr/bin/env bash
     set -euo pipefail
     found=()
     while IFS=: read -r source target; do
@@ -201,8 +199,8 @@ clean:
 
 # Remove backup files created during install
 [group('cleanup')]
+[script('bash')]
 clean-confirm:
-    #!/usr/bin/env bash
     set -euo pipefail
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
@@ -215,8 +213,8 @@ clean-confirm:
 
 # Show differences between repo and installed justfiles
 [group('status')]
+[script('bash')]
 diff:
-    #!/usr/bin/env bash
     set -euo pipefail
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
@@ -235,8 +233,8 @@ diff:
     done <<< '{{mappings}}'
 
 # Resolve string markers
+[script('bash')]
 strings:
-    #!/usr/bin/env bash
     set -euo pipefail
     dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
     cd "${dir:-$PWD}"

@@ -1,10 +1,8 @@
 set dotenv-load := true
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Install dependencies for production
 [group('development')]
@@ -19,8 +17,8 @@ install-all:
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
+[script('bash')]
 run *args="runserver --skip-checks":
-    #!/bin/bash
     uv run --frozen python manage.py {{ args }}
 
 [group('development')]
@@ -82,15 +80,15 @@ fmt: black djhtml isort && flake8
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check djhtml-check flake8 && _check-done
+check: black-check isort-check djhtml-check flake8 && check-done
 
 [private]
-@_check-done:
+check-done:
     echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-@clean:
+clean:
     -find . -type d -name __pycache__ -exec rm -rf {} +
     -find . -type f -name "*.pyc" -delete
     -find . -type d -name "*.egg-info" -exec rm -rf {} +
@@ -114,8 +112,8 @@ test-coverage *args:
 
 # Show test coverage report in browser
 [group('tests')]
+[script('sh')]
 test-coverage-report: test-coverage
-    #!/usr/bin/env sh
     if [ -f "htmlcov/index.html" ]; then
         open htmlcov/index.html 2>/dev/null || \
         xdg-open htmlcov/index.html 2>/dev/null || \

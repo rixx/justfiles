@@ -1,9 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Release a new pretalx-docker version
 [group('release')]

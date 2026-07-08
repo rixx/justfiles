@@ -1,15 +1,13 @@
 set dotenv-load := true
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
+set quiet
+set fallback
+set default-list
 
 # Common variables
 python := "uv run --frozen python"
 uv_dev := "uv run --frozen --extra=dev"
 src_dir := "src"
-
-[private]
-default:
-    @just --list
 
 # Install dependencies (use --extras to include e.g. dev)
 [group('development')]
@@ -79,19 +77,19 @@ djhtml *args="":
 # Run all formatters and linters
 [group('linting')]
 [parallel]
-fmt: black isort djhtml flake8 && _fmt-done
+fmt: black isort djhtml flake8 && fmt-done
 
 [private]
-@_fmt-done:
+fmt-done:
     echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
 
 # Run all code quality checks
 [group('linting')]
 [parallel]
-check: black-check isort-check djhtml-check flake8 && _check-done
+check: black-check isort-check djhtml-check flake8 && check-done
 
 [private]
-@_check-done:
+check-done:
     echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
 # Check for outdated dependencies
@@ -127,7 +125,7 @@ deps-bump package version:
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-@clean:
+clean:
     -find . -type d -name __pycache__ -exec rm -rf {} +
     -find . -type f -name "*.pyc" -delete
     -find . -type d -name "*.egg-info" -exec rm -rf {} +
@@ -146,8 +144,8 @@ test-parallel n="auto" *args:
 
 # Show test coverage report in browser
 [group('tests')]
+[script('sh')]
 test-coverage-report: test
-    #!/usr/bin/env sh
     if [ -f "src/htmlcov/index.html" ]; then
         open src/htmlcov/index.html 2>/dev/null || \
         xdg-open src/htmlcov/index.html 2>/dev/null || \

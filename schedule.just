@@ -1,9 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Run the development server with hot reload
 [group('development')]
@@ -67,5 +65,5 @@ analyze:
 
 # Remove build artifacts and Vite cache
 [group('development')]
-@clean:
+clean:
     -rm -rf dist node_modules/.vite

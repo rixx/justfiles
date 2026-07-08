@@ -1,9 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Add a new CLA signer and update .clabot
 [group('cla')]
@@ -16,8 +14,8 @@ add name path:
 
 # Sync CLA signers from clas/ directory to .clabot
 [group('cla')]
+[script('bash')]
 update:
-    #!/usr/bin/env bash
     set -euo pipefail
 
     # Get all names from clas/ directory (strip .pdf suffix)

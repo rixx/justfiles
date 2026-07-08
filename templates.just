@@ -1,14 +1,12 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
-set fallback := true
-
-[private]
-default:
-    @just --list
+set quiet
+set fallback
+set default-list
 
 # Build a PDF from a LaTeX file and clean up auxiliary files
 # Runs lualatex twice to resolve references (page numbers, etc.)
+[script('bash')]
 build file:
-    #!/usr/bin/env bash
     cd "{{parent_directory(file)}}"
     lualatex "{{file_name(file)}}"
     lualatex "{{file_name(file)}}"

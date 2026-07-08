@@ -4,15 +4,12 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
 set fallback
+set default-list
 
 python := "uv run --frozen python"
 uv_dev := "uv run --frozen --extra=dev"
 uv_devdocs := "uv run --frozen --extra=devdocs"
 npm := "cd src/pretalx/frontend && npm"
-
-[private]
-default:
-    just --list
 
 # Install dependencies (use --extras to include dev, devdocs, postgres)
 [group('dependencies')]
@@ -101,7 +98,6 @@ deps-bump package version:
         print("{{ package }} is not a direct dependency; updating the lock only.")
     subprocess.run(['uv', 'lock', '--upgrade-package', '{{ package }}'])
 
-
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
@@ -184,14 +180,14 @@ ruff-check *args="":
 
 # Needed to use ruff in [parallel] context because both commands write files
 [private]
-_ruff-fix:
+ruff-fix:
     just ruff-check --fix
     just ruff-format
 
 # Run formatters and linters
 [group('linting')]
 [parallel]
-fmt: _ruff-fix djangofmt noqa-reasons-check
+fmt: ruff-fix djangofmt noqa-reasons-check
 
 # Run formatters and linters in check mode
 [group('linting')]
@@ -228,10 +224,10 @@ docs-spelling:
 
 # Run most CI checks
 [group('tests')]
-ci: fmt-check reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && _ci-done
+ci: fmt-check reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && ci-done
 
 [private]
-_ci-done:
+ci-done:
     echo '{{ GREEN }}All CI checks passed{{ NORMAL }}'
 
 # Open Django shell scoped to a specific event if given
@@ -276,8 +272,8 @@ test-coverage *args:
 
 # Show test coverage report in browser
 [group('tests')]
+[script('bash')]
 test-coverage-report: test-coverage
-    #!/usr/bin/env bash
     set -euo pipefail
     if [ -f "src/htmlcov/index.html" ]; then
         open src/htmlcov/index.html 2>/dev/null || \
@@ -303,8 +299,8 @@ release-check-package:
     echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
 
 [private]
+[script('bash')]
 release-check-rebuild:
-    #!/usr/bin/env bash
     set -euo pipefail
     export PRETALX_FILESYSTEM_STATIC="$PWD/ci_static"
     # Clean up the throwaway STATIC_ROOT on exit, pass or fail.
@@ -330,8 +326,8 @@ release-check-rebuild:
     echo "{{ GREEN }}Clean-tree rebuild check successful{{ NORMAL }}"
 
 [private]
+[script('bash')]
 release-check-wheel:
-    #!/usr/bin/env bash
     set -euo pipefail
     VENV="$PWD/test_venv"
     # Smoke-test the installed wheel against a throwaway data dir so a
@@ -384,7 +380,7 @@ release-check-all: release-check-package release-check-rebuild release-check-whe
 # Set __version__ in src/pretalx/__init__.py
 [private]
 [script('python3')]
-_set-version new_version:
+set-version new_version:
     import re
     from pathlib import Path
     init = Path('src/pretalx/__init__.py')
@@ -396,7 +392,7 @@ _set-version new_version:
 # Insert a :release: entry at the top of the changelog
 [private]
 [script('python3')]
-_changelog-entry version:
+changelog-entry version:
     from datetime import date
     from pathlib import Path
 
@@ -416,7 +412,7 @@ _changelog-entry version:
 # Compute the next-minor .dev0 version following the given release version
 [private]
 [script('python3')]
-_next-dev-version version:
+next-dev-version version:
     parts = '{{ version }}'.split('-')[0].split('.')
     print(f'{parts[0]}.{int(parts[1]) + 1}.0.dev0')
 
@@ -426,14 +422,14 @@ _next-dev-version version:
 [arg('version', pattern='v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
 release version:
     uv pip install build check-manifest twine wheel
-    just _set-version {{ trim_start_match(version, "v") }}
-    just _changelog-entry {{ trim_start_match(version, "v") }}
+    just set-version {{ trim_start_match(version, "v") }}
+    just changelog-entry {{ trim_start_match(version, "v") }}
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
     uv run python -m build -n
     uvx twine upload dist/pretalx-*
-    just _set-version "$(just _next-dev-version {{ trim_start_match(version, "v") }})"
+    just set-version "$(just next-dev-version {{ trim_start_match(version, "v") }})"
     git commit -am "Bump development version"
     git push --follow-tags
     gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ trim_start_match(version, "v") }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*
