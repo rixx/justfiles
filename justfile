@@ -111,7 +111,6 @@ copy source target_dir:
 
     # Check if target already matches source
     if [[ -f "$TARGET" ]] && cmp -s "$SOURCE" "$TARGET"; then
-        echo "OK: {{source}} -> $TARGET already up to date"
         exit 0
     fi
 
