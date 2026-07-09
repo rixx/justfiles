@@ -28,6 +28,7 @@ pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-com
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-downstream
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-friendlycaptcha
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-fontpack-free
+pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-halfnarp
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-media-ccc-de
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-pages
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-public-voting
