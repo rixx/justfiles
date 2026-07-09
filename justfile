@@ -112,10 +112,16 @@ copy source target_dir:
         exit 0
     fi
 
-    # Back up existing file if present
+    # Back up the existing file unless git can already restore it: tracked and
+    # matching HEAD means the copy is recoverable, so a backup is just litter.
     if [[ -e "$TARGET" || -L "$TARGET" ]]; then
-        echo "Moving existing $TARGET to $TARGET.{{ movesuffix }}"
-        mv "$TARGET" "$TARGET.{{ movesuffix }}"
+        if git -C "$TARGET_DIR" ls-files --error-unmatch -- justfile &>/dev/null \
+            && git -C "$TARGET_DIR" diff --quiet HEAD -- justfile &>/dev/null; then
+            rm -f "$TARGET"  # Not cp-over-symlink: cp would write through the link
+        else
+            echo "Moving existing $TARGET to $TARGET.{{ movesuffix }}"
+            mv "$TARGET" "$TARGET.{{ movesuffix }}"
+        fi
     fi
 
     # Copy file
