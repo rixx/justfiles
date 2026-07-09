@@ -19,14 +19,14 @@ install-all:
 [script('bash')]
 [working-directory("src")]
 run *args="runserver --skip-checks":
-    uv run --frozen python manage.py {{ args }}
+    uv run python manage.py {{ args }}
 
 [group('development')]
 [no-exit-message]
 [positional-arguments]
 [working-directory("src")]
 python *args:
-    uv run --frozen python manage.py shell "$@"
+    uv run python manage.py shell "$@"
 
 # Update translation files
 [group('development')]
@@ -38,7 +38,7 @@ makemessages:
 [group('linting')]
 [working-directory("src")]
 black *args=".":
-    uv run --frozen black {{ args }}
+    uv run black {{ args }}
 
 # Check code with black (check only)
 [group('linting')]
@@ -54,13 +54,13 @@ isort-check *args=".":
 [group('linting')]
 [working-directory("src")]
 isort *args=".":
-    uv run --frozen isort {{ args }}
+    uv run isort {{ args }}
 
 # Run flake8 linter
 [group('linting')]
 [working-directory("src")]
 flake8 *args=".":
-    uv run --frozen flake8 {{ args }}
+    uv run flake8 {{ args }}
 
 # Check Django templates with djhtml (check only)
 [group('linting')]
@@ -70,7 +70,7 @@ djhtml-check:
 # Format Django templates with djhtml
 [group('linting')]
 djhtml *args:
-    uv run --frozen djlint --reformat --format-js --format-css src/ {{ args }}
+    uv run djlint --reformat --format-js --format-css src/ {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
@@ -97,13 +97,13 @@ clean:
 # Bump version using bumpver
 [group('development')]
 release *args:
-    uv run --frozen bumpver update {{ args }}
+    uv run bumpver update {{ args }}
 
 # Run the test suite
 [group('tests')]
 [working-directory(".")]
 test *args:
-    uv run --frozen pytest {{ args }}
+    uv run pytest {{ args }}
 
 # Run tests with coverage report
 [group('tests')]

@@ -5,8 +5,8 @@ set fallback
 set default-list
 
 # Common variables
-python := "uv run --frozen python"
-uv_dev := "uv run --frozen --extra=dev"
+python := "uv run python"
+uv_dev := "uv run --extra=dev"
 src_dir := "src"
 
 # Install dependencies (use --extras to include e.g. dev)
