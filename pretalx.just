@@ -389,6 +389,21 @@ set-version new_version:
         raise SystemExit(f"Could not find __version__ in {init}")
     init.write_text(text)
 
+[private]
+[script('python3')]
+set-com-version new_version:
+    import re
+    import sys
+    from pathlib import Path
+    versions = Path.home() / 'src/pretalx/main/src/local/pretalx-com/pretalx_com/versions.py'
+    if not versions.exists():
+        print(f'{versions} not found, skipping update-checker bump')
+        sys.exit(0)
+    text, n = re.subn(r'LATEST_VERSION = "[^"]+"', f'LATEST_VERSION = "{{ new_version }}"', versions.read_text(), count=1)
+    if n != 1:
+        raise SystemExit(f'Could not find LATEST_VERSION in {versions}')
+    versions.write_text(text)
+
 # Insert a :release: entry at the top of the changelog
 [private]
 [script('python3')]
@@ -424,6 +439,7 @@ release version:
     uv pip install build check-manifest twine wheel
     just set-version {{ trim_start_match(version, "v") }}
     just changelog-entry {{ trim_start_match(version, "v") }}
+    just set-com-version {{ trim_start_match(version, "v") }}
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
