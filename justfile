@@ -21,6 +21,7 @@ c3queue.just:" + home + "/src/c3queue
 clabot.just:" + home + "/src/clabot-config
 djcrm.just:" + home + "/src/djcrm
 dotfiles.just:" + home + "/.config/dotfiles
+laufzettel.just:" + home + "/src/laufzettel
 postix.just:" + home + "/src/postix
 pretalx-docker.just:" + home + "/src/pretalx-docker
 pretalx.just:" + home + "/src/pretalx/main
