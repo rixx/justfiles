@@ -27,3 +27,9 @@ adhoc *args:
 [group('deploy')]
 vault cmd *args:
     uv run ansible-vault {{ cmd }} --vault-password-file=.vault_password.sh {{ args }}
+
+# Push local claude credentials to the pxtx spec worker on ikarus.
+# Stop the worker first if a turn might be running (single-writer token refresh).
+[group('deploy')]
+push-claude-creds:
+    ssh ikarus "sudo install -m 0600 -o pxtx -g pxtx /dev/stdin /var/lib/pxtx-worker/.claude/.credentials.json" < ~/.claude/.credentials.json
