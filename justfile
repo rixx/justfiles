@@ -40,6 +40,7 @@ pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-broadcast-to
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-plugin-cookiecutter/{{cookiecutter.__repo_name}}
 pretix-plugin.just:" + home + "/src/pretix/src/local/pretix-c3
 pretix.just:" + home + "/src/pretix
+pxtx.just:" + home + "/src/pxtx
 schedule.just:" + home + "/src/schedule
 servala.just:" + home + "/src/servala-portal
 templates.just:" + home + "/doc/gewerbe/templates
