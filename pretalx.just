@@ -444,7 +444,7 @@ release version:
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
     uv run python -m build -n
-    uvx twine upload dist/pretalx-*
+    uvx twine upload --config-file "${PYPIRC:-$HOME/.config/pypirc}" dist/pretalx-*
     just set-version "$(just next-dev-version {{ trim_start_match(version, "v") }})"
     git commit -am "Bump development version"
     git push --follow-tags
