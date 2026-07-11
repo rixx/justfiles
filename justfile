@@ -153,7 +153,6 @@ pull-one source target_dir:
 
     # Check if files already match
     if cmp -s "$REPO" "$INSTALLED"; then
-        echo "OK: {{ source }} already matches"
         exit 0
     fi
 

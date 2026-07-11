@@ -23,6 +23,7 @@ strings:
         # Reformat if this project defines a `fmt` recipe, but never let a missing
         # recipe or a formatting error fail the strings run.
         if just --summary 2>/dev/null | tr ' ' '\n' | grep -qx fmt; then
+            echo "Running fmt …"
             just fmt 2>/dev/null || true
         fi
     else
