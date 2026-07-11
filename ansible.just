@@ -8,7 +8,13 @@ set default-list
 fmt:
     uv run ansible-playbook --syntax-check playbooks/*.yml
     uv run ansible-lint roles playbooks host_vars
+    just check-handlers
     @echo '{{ GREEN }}All checks passed{{ NORMAL }}'
+
+# Detect handler names that collide between roles sharing a play
+[group('quality')]
+check-handlers:
+    uv run python scripts/check-handler-collisions.py
 
 # Deploy to a server: just deploy playbooks/atlas.yml --tags pretalxupdate
 [group('deploy')]
@@ -27,9 +33,3 @@ adhoc *args:
 [group('deploy')]
 vault cmd *args:
     uv run ansible-vault {{ cmd }} --vault-password-file=.vault_password.sh {{ args }}
-
-# Push local claude credentials to the pxtx spec worker on ikarus.
-# Stop the worker first if a turn might be running (single-writer token refresh).
-[group('deploy')]
-push-claude-creds:
-    ssh ikarus "sudo install -m 0600 -o pxtx -g pxtx /dev/stdin /var/lib/pxtx-worker/.claude/.credentials.json" < ~/.claude/.credentials.json
