@@ -17,6 +17,7 @@ marker_grep := "grep -rIn --exclude=root.just --exclude=justfile --exclude=preta
 mappings := "
 root.just:" + home + "
 ansible.just:" + home + "/src/ansible
+ansible-presale.just:" + home + "/src/ansible_presale
 c3queue.just:" + home + "/src/c3queue
 clabot.just:" + home + "/src/clabot-config
 djcrm.just:" + home + "/src/djcrm
