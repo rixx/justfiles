@@ -22,8 +22,9 @@ fmt:
 
 # Run a command from the venv bin directory (defaults to python)
 [group('development')]
-run *args="python":
-    $BIN/{{ args }}
+[positional-arguments]
+run *args:
+    @if [ "$#" -eq 0 ]; then set -- python; fi; "$BIN/$1" "${@:2}"
 
 # Run test suite (runs with coverage if no args given)
 [group('tests')]

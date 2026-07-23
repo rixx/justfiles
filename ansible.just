@@ -18,18 +18,20 @@ check-handlers:
 
 # Deploy to a server: just deploy playbooks/atlas.yml --tags pretalxupdate
 [group('deploy')]
+[positional-arguments]
 deploy *args:
-    uv run ansible-playbook --vault-password-file=.vault_password.sh {{ args }}
+    uv run ansible-playbook --vault-password-file=.vault_password.sh "$@"
 
-# Run in adhoc mode: just adhoc pretalx -a "'df -h'"
-# Note: quote -a arguments twice due to just's argument handling
+# Run in adhoc mode: just adhoc pretalx -a "df -h"
 # Use -f {threads} for parallel runs
 [group('deploy')]
+[positional-arguments]
 adhoc *args:
-    uv run ansible --vault-password-file=.vault_password.sh {{ args }}
+    uv run ansible --vault-password-file=.vault_password.sh "$@"
 
 # Run ansible-vault: just vault edit host_vars/atlas/vault.yml
 [arg('cmd', pattern='edit|view|encrypt|decrypt|encrypt_string|rekey|create')]
 [group('deploy')]
+[positional-arguments]
 vault cmd *args:
-    uv run ansible-vault {{ cmd }} --vault-password-file=.vault_password.sh {{ args }}
+    uv run ansible-vault {{ cmd }} --vault-password-file=.vault_password.sh "${@:2}"

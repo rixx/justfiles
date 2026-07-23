@@ -6,8 +6,9 @@ set default-list
 # Run the development server or other Django commands
 [group('development')]
 [working-directory("src")]
-run *args="runserver":
-    uv run --extra=dev manage.py {{ args }}
+[positional-arguments]
+run *args:
+    @if [ "$#" -eq 0 ]; then set -- runserver; fi; uv run --extra=dev manage.py "$@"
 
 # Start a debugging SMTP server on localhost:1025
 [group('development')]

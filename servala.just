@@ -16,10 +16,10 @@ install-all:
 
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
-[script('bash')]
 [working-directory("src")]
-run *args="runserver --skip-checks":
-    uv run python manage.py {{ args }}
+[positional-arguments]
+run *args:
+    @if [ "$#" -eq 0 ]; then set -- runserver --skip-checks; fi; uv run python manage.py "$@"
 
 [group('development')]
 [no-exit-message]
