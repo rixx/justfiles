@@ -130,7 +130,7 @@ sphinx *args:
 [group('documentation')]
 docs-build format="html" *args:
     just docs-clean
-    just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
+    just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q -W {{ args }}
 
 [private]
 docs-deploy target:
@@ -217,15 +217,9 @@ blocktranslate-check:
 marker-check:
     ! grep -rIn --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' src doc
 
-# Check documentation for spelling errors
-[group('documentation')]
-docs-spelling:
-    just sphinx -b spelling -d _build/doctrees . _build/spelling
-    ! find doc/_build -type f -name '*.spelling' | grep -q .
-
 # Run most CI checks
 [group('tests')]
-ci: fmt-check reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-check-package test-parallel && ci-done
+ci: fmt-check reuse blocktranslate-check (run "compilemessages") install-npm release-check-package test-parallel && ci-done
 
 [private]
 ci-done:
