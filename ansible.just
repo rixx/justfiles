@@ -29,6 +29,19 @@ deploy *args:
 adhoc *args:
     uv run ansible --vault-password-file=.vault_password.sh "$@"
 
+# Run a compound shell command remotely with NO extra quoting layers (pipes, $vars,
+# quotes all pass through verbatim): just adhoc-sh tonks 'key=$(cmd); echo "$key" | grep x' [-b] [ansible flags]
+[group('deploy')]
+[positional-arguments]
+adhoc-sh host cmd *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host=$1; cmd=$2; shift 2
+    tmp=$(mktemp --suffix=.sh)
+    trap 'rm -f "$tmp"' EXIT
+    printf '#!/bin/sh\n%s\n' "$cmd" > "$tmp"
+    uv run ansible --vault-password-file=.vault_password.sh "$host" -m script -a "$tmp" "$@"
+
 # Recent rspamd verdicts (time, score, action, sender, rcpt, subject, top symbols): just rspamd-history [n]
 [group('mail')]
 rspamd-history n="40":
@@ -50,6 +63,22 @@ prom query:
     just adhoc jorge -m shell -a "curl -s -G --data-urlencode 'query=$1' localhost:9090/api/v1/query" \
         | tail -n +2 \
         | jq -r 'if .status != "success" then "ERROR: \(.errorType // ""): \(.error // .status)" elif .data.resultType == "vector" then (.data.result[] | "\(.metric.__name__ // "")\(.metric | del(.__name__) | if length > 0 then "{\(to_entries | map("\(.key)=\"\(.value)\"") | join(","))}" else "" end)\t\(.value[1])") elif .data.resultType == "scalar" then .data.result[1] else .data end'
+
+# Manage DNS records at INWX. Credentials + TOTP secret come from pass (web/inwx.de).
+# Examples: just dns list rixx.de [A [name]]
+#           just dns create rixx.de A grist-temp 2.28.2.63 [--ttl 3600]
+#           just dns delete rixx.de A grist-temp   (or: delete rixx.de --id 123)
+[group('dns')]
+[positional-arguments]
+dns *args:
+    uv run scripts/dns.py "$@"
+
+# All Grist accounts that ever logged in, with their team-org roles (the
+# admin-panel user list is enterprise-only; this reads the home DB instead)
+[group('grist')]
+grist-users:
+    just adhoc grist -m shell -a "sqlite3 -header -column /opt/grist/data/home.sqlite3 'select u.id, u.name, l.email, (select group_concat(g.name) from group_users gu join groups g on g.id = gu.group_id join acl_rules a on a.group_id = g.id where gu.user_id = u.id and a.org_id = 3) as org_roles from users u left join logins l on l.user_id = u.id where u.id > 4'" -b \
+        | tail -n +2
 
 # Run ansible-vault: just vault edit host_vars/atlas/vault.yml
 [arg('cmd', pattern='edit|view|encrypt|decrypt|encrypt_string|rekey|create')]
