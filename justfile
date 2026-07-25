@@ -10,7 +10,7 @@ movesuffix := "moved-by-justfiles-install"
 # Local override of root.just's `strings`: this repo defines the marker tooling,
 # so root.just and this justfile legitimately contain the ⁂ glyph in code and
 # messages. Exclude both so the loop doesn't trap on its own machinery.
-marker_grep := "grep -rIn --exclude=root.just --exclude=justfile --exclude=pretalx.just --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
+marker_grep := "grep -rIn --exclude=root.just --exclude=llm.just --exclude=justfile --exclude=pretalx.just --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
 
 # Central mapping of justfiles to their target directories
 # Format: "source.just:target_directory" (one per line)
@@ -23,6 +23,7 @@ clabot.just:" + home + "/src/clabot-config
 djcrm.just:" + home + "/src/djcrm
 dotfiles.just:" + home + "/.config/dotfiles
 laufzettel.just:" + home + "/src/laufzettel
+llm.just:" + home + "/src/llm
 postix.just:" + home + "/src/postix
 pretalx-docker.just:" + home + "/src/pretalx-docker
 pretalx.just:" + home + "/src/pretalx/main
