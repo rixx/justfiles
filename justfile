@@ -46,6 +46,7 @@ pretix.just:" + home + "/src/pretix
 pxtx.just:" + home + "/src/pxtx
 schedule.just:" + home + "/src/schedule
 servala.just:" + home + "/src/servala-portal
+spur.just:" + home + "/src/spur
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
 "
