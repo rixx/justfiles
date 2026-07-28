@@ -9,12 +9,32 @@ fmt:
     uv run ansible-playbook --syntax-check playbooks/*.yml
     uv run ansible-lint roles playbooks host_vars
     just check-handlers
+    just journal-canary
     @echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
 # Detect handler names that collide between roles sharing a play
 [group('quality')]
 check-handlers:
     uv run python scripts/check-handler-collisions.py
+
+# Validate journal-brief exclusion rules against the never-ignore canary corpus
+[group('quality')]
+journal-canary:
+    uv run python scripts/journal-brief-canary.py
+
+# Pull new journal entries (since the last collect) from a host into
+# .journal-dumps/<host>-<stamp>.log: just journal-brief-collect tonks
+[group('monitoring')]
+[positional-arguments]
+journal-brief-collect host:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host=$1
+    stamp=$(date +%F-%H%M%S)
+    f="/var/tmp/journal-brief/dump-$stamp.log"
+    just adhoc-sh "$host" "mkdir -p /var/tmp/journal-brief; journal-brief > $f 2>&1 || echo \"journal-brief failed: rc=\$?\" >> $f; find /var/tmp/journal-brief -type f -mtime +7 -delete" -b > /dev/null
+    just adhoc "$host" -m fetch -a "src=$f dest=.journal-dumps/$host-$stamp.log flat=yes" -b > /dev/null
+    wc -l ".journal-dumps/$host-$stamp.log"
 
 # Deploy to a server: just deploy playbooks/atlas.yml --tags pretalxupdate
 [group('deploy')]

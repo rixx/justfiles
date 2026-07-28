@@ -27,6 +27,7 @@ skills/visual-check:" + home + "/src/pretalx/main/.claude/skills/visual-check
 hooks/check-uv-pytest.py:" + home + "/src/pretalx/main/.claude/hooks/check-uv-pytest.py
 skills/github-notif-triage:" + home + "/.claude/skills/github-notif-triage
 skills/multi-review:" + home + "/.claude/skills/multi-review
+skills/systemd-journal-daily:" + home + "/src/claude/.claude/skills/systemd-journal-daily
 hooks/head-tail.py:" + home + "/.claude/hooks/head-tail.py
 "
 
