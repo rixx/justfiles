@@ -21,9 +21,13 @@ claude-md/pretalx.md:" + home + "/src/pretalx/main/CLAUDE.md
 skills/pretalx-changelog:" + home + "/src/pretalx/main/.claude/skills/pretalx-changelog
 skills/compress-tests:" + home + "/src/pretalx/main/.claude/skills/compress-tests
 skills/pxtx-dev:" + home + "/src/pretalx/main/.claude/skills/pxtx-dev
+skills/pretalx-translations:" + home + "/src/pretalx/main/.claude/skills/pretalx-translations
 skills/release-blog-post:" + home + "/src/pretalx/main/.claude/skills/release-blog-post
 skills/visual-check:" + home + "/src/pretalx/main/.claude/skills/visual-check
 hooks/check-uv-pytest.py:" + home + "/src/pretalx/main/.claude/hooks/check-uv-pytest.py
+skills/github-notif-triage:" + home + "/.claude/skills/github-notif-triage
+skills/multi-review:" + home + "/.claude/skills/multi-review
+hooks/head-tail.py:" + home + "/.claude/hooks/head-tail.py
 "
 
 # Helper shared by the recipes below (sourced via eval)
