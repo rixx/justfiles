@@ -76,13 +76,21 @@ rspamd-check file:
     just adhoc tonks -m shell -a "rspamc symbols /tmp/rspamd-check.eml; rm -f /tmp/rspamd-check.eml"
 
 # Instant PromQL query against Prometheus on jorge: just prom 'up{job="node"}'
-# Single quotes cannot appear in the query; use double quotes for label values
+# Quotes of either kind are safe: jq encodes the query into the uri module's JSON
+# arguments, so it travels as data and never reaches a shell (the old -m shell +
+# curl form could not carry a single quote at all).
 [group('monitoring')]
 [positional-arguments]
 prom query:
-    just adhoc jorge -m shell -a "curl -s -G --data-urlencode 'query=$1' localhost:9090/api/v1/query" \
-        | tail -n +2 \
-        | jq -r 'if .status != "success" then "ERROR: \(.errorType // ""): \(.error // .status)" elif .data.resultType == "vector" then (.data.result[] | "\(.metric.__name__ // "")\(.metric | del(.__name__) | if length > 0 then "{\(to_entries | map("\(.key)=\"\(.value)\"") | join(","))}" else "" end)\t\(.value[1])") elif .data.resultType == "scalar" then .data.result[1] else .data end'
+    #!/usr/bin/env bash
+    set -uo pipefail
+    # The raw wrapper matters: ansible templates module arguments through
+    # Jinja2, so a query containing doubled curly braces would be evaluated as
+    # a template rather than sent to Prometheus.
+    args=$(jq -n --arg q "$1" '{url: "http://localhost:9090/api/v1/query", method: "POST", body_format: "form-urlencoded", body: {query: ("{% raw %}" + $q + "{% endraw %}")}, return_content: true, status_code: [200, 400, 422, 503]}')
+    out=$(ANSIBLE_LOAD_CALLBACK_PLUGINS=1 ANSIBLE_STDOUT_CALLBACK=json ANSIBLE_DEPRECATION_WARNINGS=False \
+        uv run ansible --vault-password-file=.vault_password.sh jorge -m uri -a "$args")
+    printf '%s' "$out" | jq -r '.plays[0].tasks[0].hosts.jorge as $h | if $h.json == null then "ERROR: \($h.msg // "no answer from jorge")" elif $h.json.status != "success" then "ERROR: \($h.json.errorType // ""): \($h.json.error // $h.json.status)" elif $h.json.data.resultType == "vector" then ($h.json.data.result[] | "\(.metric.__name__ // "")\(.metric | del(.__name__) | if length > 0 then "{\(to_entries | map("\(.key)=\"\(.value)\"") | join(","))}" else "" end)\t\(.value[1])") elif $h.json.data.resultType == "scalar" then $h.json.data.result[1] else $h.json.data end'
 
 # Manage DNS records at INWX. Credentials + TOTP secret come from pass (web/inwx.de).
 # Examples: just dns list rixx.de [A [name]]
@@ -99,6 +107,29 @@ dns *args:
 grist-users:
     just adhoc grist -m shell -a "sqlite3 -header -column /opt/grist/data/home.sqlite3 'select u.id, u.name, l.email, (select group_concat(g.name) from group_users gu join groups g on g.id = gu.group_id join acl_rules a on a.group_id = g.id where gu.user_id = u.id and a.org_id = 3) as org_roles from users u left join logins l on l.user_id = u.id where u.id > 4'" -b \
         | tail -n +2
+
+# Fetch a goaccess report for one of a host's caddy sites and open it:
+#   just goaccess tonks                 -> list the sites that have a report
+#   just goaccess tonks rixx            -> fetch .goaccess/tonks-rixx.html, open it
+#   just goaccess tonks rixx --refresh  -> regenerate on the host first (slow)
+[group('monitoring')]
+[positional-arguments]
+goaccess host site="" *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$1"; site="${2:-}"; shift 2 || true
+    dir=/var/lib/goaccess/reports
+    if [[ " ${*} " == *" --refresh "* ]]; then
+        just adhoc "$host" -m systemd_service -a "name=goaccess-caddy.service state=restarted" -b > /dev/null
+    fi
+    if [[ -z "$site" ]]; then
+        just adhoc "$host" -m shell -a "ls -1 $dir | sed 's/\.html$//'" -b | tail -n +2
+        exit 0
+    fi
+    mkdir -p .goaccess
+    just adhoc "$host" -m fetch -a "src=$dir/$site.html dest=.goaccess/$host-$site.html flat=yes" -b > /dev/null
+    echo ".goaccess/$host-$site.html"
+    xdg-open ".goaccess/$host-$site.html" > /dev/null 2>&1 &
 
 # Run ansible-vault: just vault edit host_vars/atlas/vault.yml
 [arg('cmd', pattern='edit|view|encrypt|decrypt|encrypt_string|rekey|create')]
