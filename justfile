@@ -20,6 +20,7 @@ ansible.just:" + home + "/src/ansible
 ansible-presale.just:" + home + "/src/ansible_presale
 c3queue.just:" + home + "/src/c3queue
 clabot.just:" + home + "/src/clabot-config
+diathek.just:" + home + "/src/diathek
 djcrm.just:" + home + "/src/djcrm
 dotfiles.just:" + home + "/.config/dotfiles
 laufzettel.just:" + home + "/src/laufzettel
