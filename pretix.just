@@ -5,8 +5,8 @@ set default-list
 
 # Run the development server or other Django commands
 [group('development')]
-[working-directory("src")]
 [positional-arguments]
+[working-directory("src")]
 run *args:
     @if [ "$#" -eq 0 ]; then set -- runserver; fi; uv run --extra=dev manage.py "$@"
 

@@ -16,8 +16,8 @@ install-all:
 
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
-[working-directory("src")]
 [positional-arguments]
+[working-directory("src")]
 run *args:
     @if [ "$#" -eq 0 ]; then set -- runserver --skip-checks; fi; uv run python manage.py "$@"
 

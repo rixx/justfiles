@@ -95,7 +95,7 @@ prom query:
 # Manage DNS records at INWX. Credentials + TOTP secret come from pass (web/inwx.de).
 # Examples: just dns list rixx.de [A [name]]
 #           just dns create rixx.de A grist-temp 2.28.2.63 [--ttl 3600]
-#           just dns delete rixx.de A grist-temp   (or: delete rixx.de --id 123)
+# just dns delete rixx.de A grist-temp   (or: delete rixx.de --id 123)
 [group('dns')]
 [positional-arguments]
 dns *args:
@@ -111,7 +111,7 @@ grist-users:
 # Fetch a goaccess report for one of a host's caddy sites and open it:
 #   just goaccess tonks                 -> list the sites that have a report
 #   just goaccess tonks rixx            -> fetch .goaccess/tonks-rixx.html, open it
-#   just goaccess tonks rixx --refresh  -> regenerate on the host first (slow)
+# just goaccess tonks rixx --refresh  -> regenerate on the host first (slow)
 [group('monitoring')]
 [positional-arguments]
 goaccess host site="" *flags:
