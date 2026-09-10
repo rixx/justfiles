@@ -113,7 +113,7 @@ collectstatic:
     {{ python }} manage.py collectstatic --noinput
 
 # Run production server via gunicorn
-# ⁂ --timeout must exceed the Immich retry budgets: the edit round-trip
+# --timeout must exceed the Immich retry budgets: the edit round-trip
 # proxies uploads to Immich inside the request, and one file may spend up to
 # 5 min in transport retries plus 5 min waiting for Immich's ingest job.
 [group('operations')]

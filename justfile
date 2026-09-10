@@ -21,6 +21,7 @@ ansible-presale.just:" + home + "/src/ansible_presale
 c3queue.just:" + home + "/src/c3queue
 clabot.just:" + home + "/src/clabot-config
 diathek.just:" + home + "/src/diathek
+ereader.just:" + home + "/src/ereader
 djcrm.just:" + home + "/src/djcrm
 dotfiles.just:" + home + "/.config/dotfiles
 laufzettel.just:" + home + "/src/laufzettel
@@ -36,7 +37,6 @@ pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-halfnarp
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-media-ccc-de
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-pages
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-public-voting
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-salesforce
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-venueless
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-vimeo
 pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-youtube
@@ -47,7 +47,6 @@ pretix.just:" + home + "/src/pretix
 pxtx.just:" + home + "/src/pxtx
 schedule.just:" + home + "/src/schedule
 scriptorium.just:" + home + "/src/scriptorium
-servala.just:" + home + "/src/servala-portal
 spur.just:" + home + "/src/spur
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools

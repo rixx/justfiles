@@ -97,7 +97,6 @@ install-server:
 
     # Email
     conflink mutt/muttrc
-    link mutt/notmuch-mutt .local/bin/notmuch-mutt
     link mutt/offlineimaprc .config/offlineimap/config
 
     # File manager (works in CLI too)
@@ -145,6 +144,39 @@ install-gui:
 
     # Systemd user services (desktop-related)
     conflink systemd
+
+    # USB KVM switch: suspend when the shared hub is handed to the desktop.
+    # These live outside $HOME, so only reach for sudo when they actually differ.
+    kvm_dirty=0
+    if ! cmp -s usb-kvm/95-kvm-suspend.rules /etc/udev/rules.d/95-kvm-suspend.rules; then
+        doit sudo cp usb-kvm/95-kvm-suspend.rules /etc/udev/rules.d/95-kvm-suspend.rules
+        doit sudo udevadm control --reload-rules
+        kvm_dirty=1
+    fi
+    for unit in kvm-suspend.service kvm-arm-wakeup.service; do
+        if ! cmp -s "usb-kvm/$unit" "/etc/systemd/system/$unit"; then
+            doit sudo cp "usb-kvm/$unit" "/etc/systemd/system/$unit"
+            kvm_dirty=1
+        fi
+    done
+    if [[ "$kvm_dirty" == 1 ]]; then
+        doit sudo systemctl daemon-reload
+    fi
+
+    # Lid switch: sway decides (bin/,lid), logind stays out of it.
+    if ! cmp -s sway/logind-lid.conf /etc/systemd/logind.conf.d/lid.conf; then
+        doit sudo install -Dm644 sway/logind-lid.conf /etc/systemd/logind.conf.d/lid.conf
+        doit sudo systemctl reload systemd-logind
+    fi
+
+    # Hibernation: swapfile is created by hand (see hibernate/README), config lives here.
+    if ! cmp -s hibernate/sleep.conf /etc/systemd/sleep.conf.d/hibernate.conf; then
+        doit sudo install -Dm644 hibernate/sleep.conf /etc/systemd/sleep.conf.d/hibernate.conf
+    fi
+    if ! cmp -s hibernate/sysctl.conf /etc/sysctl.d/90-swappiness.conf; then
+        doit sudo install -Dm644 hibernate/sysctl.conf /etc/sysctl.d/90-swappiness.conf
+        doit sudo sysctl -q -p /etc/sysctl.d/90-swappiness.conf
+    fi
 
     # Firefox
     if [[ -d "$HOME/.mozilla" ]]; then
