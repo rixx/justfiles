@@ -10,7 +10,7 @@ movesuffix := "moved-by-llm-install"
 # Local override of root.just's `strings`: this repo stores the prompts that
 # define the marker convention, so claude-md/root.md and prompts/string-markers.md
 # legitimately contain the ⁂ glyph. Exclude both so the loop doesn't trap on them.
-marker_grep := "grep -rIn --exclude=justfile --exclude=root.md --exclude=string-markers.md --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
+marker_grep := "grep -rIn --exclude=justfile --exclude=root.md --exclude=string-markers.md --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist,temp-results} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
 
 # Central mapping of repo files to the places the tools expect them.
 # Format: "repo/path:/absolute/target/path" (one per line). Sources may be
