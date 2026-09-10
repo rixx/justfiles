@@ -6,8 +6,7 @@ set default-list
 # Run syntax check and ansible-lint on roles, playbooks, and host_vars
 [group('quality')]
 fmt:
-    uv run ansible-playbook --syntax-check playbooks/*.yml > /dev/null
-    uv run ansible-lint -q roles playbooks host_vars
+    uv run python scripts/lint.py -q --offline roles playbooks host_vars
     just check-handlers
     just journal-canary
     @echo '{{ GREEN }}All checks passed{{ NORMAL }}'

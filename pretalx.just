@@ -63,47 +63,21 @@ npm *args:
 dev-schedule:
     just npm dev:schedule
 
-# Check for outdated dependencies
-[group('dependencies')]
-[script('python3')]
-deps-outdated:
-    import json, subprocess, tomllib
-    from packaging.requirements import Requirement
-
-    result = subprocess.run(['uv', 'pip', 'list', '--outdated', '--format=json'], capture_output=True, text=True)
-    outdated = {p['name'].lower(): p for p in json.loads(result.stdout)}
-    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
-    direct = {Requirement(d).name.lower() for d in deps}
-
-    for name in sorted(outdated.keys() & direct):
-        p = outdated[name]
-        print(f"{p['name']}: {p['version']} → {p['latest_version']}")
-
-# Bump a dependency version
-[group('dependencies')]
-[script('python3')]
-deps-bump package version:
-    import subprocess, tomllib
-    from pathlib import Path
-    from packaging.requirements import Requirement
-
-    p = Path('pyproject.toml')
-    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', [])
-    old = next((d for d in deps if Requirement(d).name.lower() == '{{ package }}'.lower()), None)
-    if old:
-        req = Requirement(old)
-        extras = f"[{','.join(sorted(req.extras))}]" if req.extras else ""
-        p.write_text(p.read_text().replace(old, f'{req.name}{extras}~={{ version }}'))
-    else:
-        print("{{ package }} is not a direct dependency; updating the lock only.")
-    subprocess.run(['uv', 'lock', '--upgrade-package', '{{ package }}'])
-
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [positional-arguments]
 [working-directory("src")]
 run *args:
-    @if [ "$#" -eq 0 ]; then set -- devserver --skip-checks; fi; {{ python }} manage.py "$@"
+    @if [ "$#" -eq 0 ]; then exec just devserver; fi; {{ python }} manage.py "$@"
+
+# Run the development server on the first free port
+[group('development')]
+[script('bash')]
+devserver *args:
+    set -euo pipefail
+    port="$(python3 -c "import socket; print(next(port for port in range(8000, 8100) if socket.socket().connect_ex(('127.0.0.1', port))))")"
+    export PRETALX_SITE_URL="http://127.0.0.1:$port"
+    just run devserver "127.0.0.1:$port" --skip-checks {{ args }}
 
 # Update translation files
 [group('development')]
@@ -131,6 +105,7 @@ sphinx *args:
 docs-build format="html" *args:
     just docs-clean
     just sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q -W {{ args }}
+    @echo "docs build succeeded: doc/_build/{{ format }}"
 
 [private]
 docs-deploy target:
@@ -196,15 +171,31 @@ fmt: ruff-fix djangofmt noqa-reasons-check
 [private]
 fmt-check: (ruff-format "--check") ruff-check djangofmt-check noqa-reasons-check
 
-# Lint and autofix the frontend apps with eslint
-[group('linting')]
-fmt-npm:
+[private]
+eslint-fix:
     just npm lint:fix
 
-# Lint the frontend apps with eslint without autofixing
+[private]
+biome-fix:
+    just npm lint:static:fix
+
+# Lint and autofix frontend files
 [group('linting')]
-fmt-npm-check:
+[parallel]
+fmt-npm: eslint-fix biome-fix
+
+[private]
+eslint-check:
     just npm lint
+
+[private]
+biome-check:
+    just npm lint:static
+
+[private]
+[group('linting')]
+[parallel]
+fmt-npm-check: eslint-check biome-check
 
 [private]
 noqa-reasons-check:
