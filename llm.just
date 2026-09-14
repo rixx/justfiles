@@ -10,26 +10,91 @@ movesuffix := "moved-by-llm-install"
 # Local override of root.just's `strings`: this repo stores the prompts that
 # define the marker convention, so claude-md/root.md and prompts/string-markers.md
 # legitimately contain the ⁂ glyph. Exclude both so the loop doesn't trap on them.
-marker_grep := "grep -rIn --exclude=justfile --exclude=root.md --exclude=string-markers.md --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist,temp-results} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
+marker_grep := "grep -rIn --exclude=justfile --exclude=root.md --exclude=string-markers.md --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
 
 # Central mapping of repo files to the places the tools expect them.
 # Format: "repo/path:/absolute/target/path" (one per line). Sources may be
-# files or directories.
-mappings := "
+# files or directories. The blocks below are concatenated into `mappings`;
+# blank lines between them are ignored by the reader. Keep comments *outside*
+# the strings: a `#` line inside would be read as a mapping source.
+
+# CLAUDE.md instruction files
+claude_md_mappings := "
 claude-md/root.md:" + home + "/CLAUDE.md
 claude-md/pretalx.md:" + home + "/src/pretalx/main/CLAUDE.md
-skills/pretalx-changelog:" + home + "/src/pretalx/main/.claude/skills/pretalx-changelog
-skills/compress-tests:" + home + "/src/pretalx/main/.claude/skills/compress-tests
-skills/pxtx-dev:" + home + "/src/pretalx/main/.claude/skills/pxtx-dev
-skills/pretalx-translations:" + home + "/src/pretalx/main/.claude/skills/pretalx-translations
-skills/release-blog-post:" + home + "/src/pretalx/main/.claude/skills/release-blog-post
-skills/visual-check:" + home + "/src/pretalx/main/.claude/skills/visual-check
-hooks/check-uv-pytest.py:" + home + "/src/pretalx/main/.claude/hooks/check-uv-pytest.py
-skills/github-notif-triage:" + home + "/.claude/skills/github-notif-triage
-skills/multi-review:" + home + "/.claude/skills/multi-review
-skills/systemd-journal-daily:" + home + "/src/claude/.claude/skills/systemd-journal-daily
-hooks/head-tail.py:" + home + "/.claude/hooks/head-tail.py
+claude-md/ansible.md:" + home + "/src/ansible/CLAUDE.md
+claude-md/ansible_presale.md:" + home + "/src/ansible_presale/CLAUDE.md
+claude-md/brett.md:" + home + "/src/brett/CLAUDE.md
+claude-md/ccdb.md:" + home + "/src/ccdb/CLAUDE.md
+claude-md/claude.md:" + home + "/src/claude/CLAUDE.md
+claude-md/diathek.md:" + home + "/src/diathek/CLAUDE.md
+claude-md/djcrm.md:" + home + "/src/djcrm/CLAUDE.md
+claude-md/justfiles.md:" + home + "/src/justfiles/CLAUDE.md
+claude-md/koreader-scriptorium.md:" + home + "/src/koreader-scriptorium/CLAUDE.md
+claude-md/postix.md:" + home + "/src/postix/CLAUDE.md
+claude-md/pxtx.md:" + home + "/src/pxtx/CLAUDE.md
+claude-md/recipes.rixx.de.md:" + home + "/src/recipes.rixx.de/CLAUDE.md
+claude-md/schedule.md:" + home + "/src/schedule/CLAUDE.md
+claude-md/scriptorium.md:" + home + "/src/scriptorium/CLAUDE.md
+claude-md/spur.md:" + home + "/src/spur/CLAUDE.md
 "
+
+# CLAUDE.md files for pretalx/pretix plugins. Most plugins share one generic
+# file; the two with substantial plugin-specific content get their own.
+plugin_claude_md_mappings := "
+claude-md/pretalx-com.md:" + home + "/src/pretalx/main/src/local/pretalx-com/CLAUDE.md
+claude-md/pretix-c3.md:" + home + "/src/pretix/src/local/pretix-c3/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-broadcast-tools/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-downstream/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-friendlycaptcha/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-halfnarp/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-media-ccc-de/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-pages/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-public-voting/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-venueless/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-vimeo/CLAUDE.md
+claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-youtube/CLAUDE.md
+"
+
+# Skills available everywhere
+global_skill_mappings := "
+skills/browser-screenshots:" + home + "/.claude/skills/browser-screenshots
+skills/skill-authoring:" + home + "/.claude/skills/skill-authoring
+skills/wiki:" + home + "/.claude/skills/wiki
+skills/wind-down:" + home + "/.claude/skills/wind-down
+"
+
+# CLI tools
+tool_mappings := "
+tools/wiki:" + home + "/.local/bin/wiki
+tools/ccusage_projects.py:" + home + "/.local/bin/ccusage-projects
+"
+
+# Skills scoped to pretalx
+pretalx_skill_mappings := "
+skills/compress-tests:" + home + "/src/pretalx/main/.claude/skills/compress-tests
+skills/github-notif-triage:" + home + "/src/pretalx/main/.claude/skills/github-notif-triage
+skills/multi-review:" + home + "/src/pretalx/main/.claude/skills/multi-review
+skills/pretalx-changelog:" + home + "/src/pretalx/main/.claude/skills/pretalx-changelog
+skills/pretalx-translations:" + home + "/src/pretalx/main/.claude/skills/pretalx-translations
+skills/pxtx-dev:" + home + "/src/pretalx/main/.claude/skills/pxtx-dev
+skills/release-blog-post:" + home + "/src/pretalx/main/.claude/skills/release-blog-post
+skills/render-check:" + home + "/src/pretalx/main/.claude/skills/render-check
+"
+
+# Skills scoped to other projects
+claude_skill_mappings := "
+skills/systemd-journal-daily:" + home + "/src/ansible/.claude/skills/systemd-journal-daily
+"
+
+# Hooks: global first, then per-project
+hook_mappings := "
+hooks/head-tail.py:" + home + "/.claude/hooks/head-tail.py
+hooks/wiki-startup.sh:" + home + "/.claude/hooks/wiki-startup.sh
+hooks/check-uv-pytest.py:" + home + "/src/pretalx/main/.claude/hooks/check-uv-pytest.py
+"
+
+mappings := claude_md_mappings + plugin_claude_md_mappings + global_skill_mappings + pretalx_skill_mappings + claude_skill_mappings + hook_mappings + tool_mappings
 
 # Helper shared by the recipes below (sourced via eval)
 mapping_lib := '''
