@@ -18,51 +18,57 @@ marker_grep := "grep -rIn --exclude=justfile --exclude=root.md --exclude=string-
 # blank lines between them are ignored by the reader. Keep comments *outside*
 # the strings: a `#` line inside would be read as a mapping source.
 
-# CLAUDE.md instruction files
-claude_md_mappings := "
-claude-md/root.md:" + home + "/CLAUDE.md
-claude-md/pretalx.md:" + home + "/src/pretalx/main/CLAUDE.md
-claude-md/ansible.md:" + home + "/src/ansible/CLAUDE.md
-claude-md/ansible_presale.md:" + home + "/src/ansible_presale/CLAUDE.md
-claude-md/brett.md:" + home + "/src/brett/CLAUDE.md
-claude-md/ccdb.md:" + home + "/src/ccdb/CLAUDE.md
-claude-md/claude.md:" + home + "/src/claude/CLAUDE.md
-claude-md/diathek.md:" + home + "/src/diathek/CLAUDE.md
-claude-md/djcrm.md:" + home + "/src/djcrm/CLAUDE.md
-claude-md/justfiles.md:" + home + "/src/justfiles/CLAUDE.md
-claude-md/koreader-scriptorium.md:" + home + "/src/koreader-scriptorium/CLAUDE.md
-claude-md/postix.md:" + home + "/src/postix/CLAUDE.md
-claude-md/pxtx.md:" + home + "/src/pxtx/CLAUDE.md
-claude-md/recipes.rixx.de.md:" + home + "/src/recipes.rixx.de/CLAUDE.md
-claude-md/schedule.md:" + home + "/src/schedule/CLAUDE.md
-claude-md/scriptorium.md:" + home + "/src/scriptorium/CLAUDE.md
-claude-md/spur.md:" + home + "/src/spur/CLAUDE.md
+# CLAUDE.md instruction files: name:target-dir under $HOME, expanded below
+claude_md := "
+root:
+pretalx:/src/pretalx/main
+ansible:/src/ansible
+ansible_presale:/src/ansible_presale
+brett:/src/brett
+ccdb:/src/ccdb
+claude:/src/claude
+diathek:/src/diathek
+djcrm:/src/djcrm
+justfiles:/src/justfiles
+koreader-scriptorium:/src/koreader-scriptorium
+postix:/src/postix
+pxtx:/src/pxtx
+recipes.rixx.de:/src/recipes.rixx.de
+schedule:/src/schedule
+scriptorium:/src/scriptorium
+spur:/src/spur
 "
+claude_md_mappings := replace_regex(claude_md, "(?m)^([^:\\n]+):(.*)$", "claude-md/$1.md:" + home + "$2/CLAUDE.md")
 
-# CLAUDE.md files for pretalx/pretix plugins. Most plugins share one generic
-# file; the two with substantial plugin-specific content get their own.
-plugin_claude_md_mappings := "
-claude-md/pretalx-com.md:" + home + "/src/pretalx/main/src/local/pretalx-com/CLAUDE.md
-claude-md/pretix-c3.md:" + home + "/src/pretix/src/local/pretix-c3/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-broadcast-tools/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-downstream/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-friendlycaptcha/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-halfnarp/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-media-ccc-de/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-pages/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-public-voting/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-venueless/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-vimeo/CLAUDE.md
-claude-md/pretalx-plugin.md:" + home + "/src/pretalx/main/src/local/pretalx-youtube/CLAUDE.md
+# CLAUDE.md files for pretalx/pretix plugins. Most pretalx plugins share one
+# generic file; the two with substantial plugin-specific content get their own.
+pretalx_plugins := "
+broadcast-tools
+downstream
+friendlycaptcha
+halfnarp
+media-ccc-de
+pages
+public-voting
+venueless
+vimeo
+youtube
 "
+plugin_claude_md := "
+pretalx-com:/src/pretalx/main/src/local/pretalx-com
+pretix-c3:/src/pretix/src/local/pretix-c3
+" + replace_regex(pretalx_plugins, "(\\S+)", "pretalx-plugin:/src/pretalx/main/src/local/pretalx-$1")
+plugin_claude_md_mappings := replace_regex(plugin_claude_md, "(?m)^([^:\\n]+):(.*)$", "claude-md/$1.md:" + home + "$2/CLAUDE.md")
 
-# Skills available everywhere
-global_skill_mappings := "
-skills/browser-screenshots:" + home + "/.claude/skills/browser-screenshots
-skills/skill-authoring:" + home + "/.claude/skills/skill-authoring
-skills/wiki:" + home + "/.claude/skills/wiki
-skills/wind-down:" + home + "/.claude/skills/wind-down
+# Skills available everywhere: one name per line, expanded below
+global_skills := "
+browser-screenshots
+justfile
+skill-authoring
+wiki
+wind-down
 "
+global_skill_mappings := replace_regex(global_skills, "(\\S+)", "skills/$1:" + home + "/.claude/skills/$1")
 
 # CLI tools
 tool_mappings := "
@@ -70,17 +76,18 @@ tools/wiki:" + home + "/.local/bin/wiki
 tools/ccusage_projects.py:" + home + "/.local/bin/ccusage-projects
 "
 
-# Skills scoped to pretalx
-pretalx_skill_mappings := "
-skills/compress-tests:" + home + "/src/pretalx/main/.claude/skills/compress-tests
-skills/github-notif-triage:" + home + "/src/pretalx/main/.claude/skills/github-notif-triage
-skills/multi-review:" + home + "/src/pretalx/main/.claude/skills/multi-review
-skills/pretalx-changelog:" + home + "/src/pretalx/main/.claude/skills/pretalx-changelog
-skills/pretalx-translations:" + home + "/src/pretalx/main/.claude/skills/pretalx-translations
-skills/pxtx-dev:" + home + "/src/pretalx/main/.claude/skills/pxtx-dev
-skills/release-blog-post:" + home + "/src/pretalx/main/.claude/skills/release-blog-post
-skills/render-check:" + home + "/src/pretalx/main/.claude/skills/render-check
+# Skills scoped to pretalx: one name per line, expanded below
+pretalx_skills := "
+compress-tests
+github-notif-triage
+multi-review
+pretalx-changelog
+pretalx-translations
+pxtx-dev
+release-blog-post
+render-check
 "
+pretalx_skill_mappings := replace_regex(pretalx_skills, "(\\S+)", "skills/$1:" + home + "/src/pretalx/main/.claude/skills/$1")
 
 # Skills scoped to other projects
 claude_skill_mappings := "
