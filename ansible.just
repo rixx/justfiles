@@ -118,7 +118,10 @@ sh host cmd *flags:
     fi
     # Drop the connection-teardown chatter that would otherwise outnumber the
     # actual output on a quiet command.
-    noise='def demark: sub("\u001b\\]3008;end=[^\u001b]*(\u001b\\\\)?"; ""); def noise: test("^(Shared c|C)onnection to .* closed\\.$") or length == 0;'
+    # Ansible runs the script on a pty, so tty-aware tools (pacman, systemd)
+    # emit colour and cursor escapes that glue themselves to the value and
+    # break every grep downstream: strip CSI sequences here.
+    noise='def demark: sub("\u001b\\]3008;end=[^\u001b]*(\u001b\\\\)?"; "") | gsub("\u001b\\[[0-9;?]*[ -/]*[@-~]"; ""); def noise: test("^(Shared c|C)onnection to .* closed\\.$") or length == 0;'
     if [[ -n "$json" ]]; then
         printf '%s\n' "$hosts" | jq .
     elif [[ "$(printf '%s' "$hosts" | jq 'length')" == 1 ]]; then
@@ -143,6 +146,35 @@ sh host cmd *flags:
           | flatten | .[]'
     fi
     exit "$(printf '%s' "$hosts" | jq '[.[] | if (.unreachable // false) then 255 else (.rc // 0) end] | max // 0')"
+
+# Start a long-running command on a host as a transient systemd unit, detached
+# from this session: just bg atlas repack 'pg_repack -a -j4'
+# stdout and stderr land in /root/<unit>.log on the host; watch it with
+#   just sh atlas 'systemctl status repack'
+#   just sh atlas 'cat /root/repack.log'
+# Lesson: a backgrounded shell job (nohup, setsid, &) does not survive here.
+# Ansible tears its session down when the module returns and the child dies
+# with it — the log stays empty and nothing reports the kill. systemd owns
+# the transient unit instead, so the ssh connection no longer matters.
+[doc('Start a long command on a host as a detached systemd unit')]
+[group('deploy')]
+[positional-arguments]
+bg host unit cmd:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host=$1; unit=$2; cmd=$3
+    if [[ ! "$unit" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+        echo "just bg: unit name must be [A-Za-z0-9_.-] (got '$unit')" >&2; exit 2
+    fi
+    tmp=$(mktemp --suffix=.sh)
+    trap 'rm -f "$tmp"' EXIT
+    # The command travels as a script file, so its quoting never meets
+    # systemd-run's.
+    printf '#!/bin/bash\nset -uo pipefail\nexport SYSTEMD_PAGER=cat PAGER=cat\n%s\n' "$cmd" > "$tmp"
+    just adhoc "$host" -m copy -a "src=$tmp dest=/root/$unit.sh mode=0700" -b > /dev/null
+    just sh "$host" "systemd-run --unit=$unit --description='just bg: $unit' \
+        -p StandardOutput=file:/root/$unit.log -p StandardError=file:/root/$unit.log \
+        /root/$unit.sh"
 
 # Recent rspamd verdicts (time, score, action, sender, rcpt, subject, top symbols): just rspamd-history [n]
 # The TSV summary keeps only the eight strongest symbols; add --json (in either

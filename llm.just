@@ -80,7 +80,6 @@ tools/ccusage_projects.py:" + home + "/.local/bin/ccusage-projects
 pretalx_skills := "
 compress-tests
 github-notif-triage
-multi-review
 pretalx-changelog
 pretalx-translations
 pxtx-dev
