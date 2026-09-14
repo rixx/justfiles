@@ -126,9 +126,21 @@ copy source target_dir:
 
     # Back up the existing file unless git can already restore it: tracked and
     # matching HEAD means the copy is recoverable, so a backup is just litter.
-    if [[ -e "$TARGET" || -L "$TARGET" ]]; then
+    # Same for a target that equals any committed version of the source here:
+    # an edit/install loop otherwise leaves a backup per run.
+    recoverable() {
         if git -C "$TARGET_DIR" ls-files --error-unmatch -- justfile &>/dev/null \
             && git -C "$TARGET_DIR" diff --quiet HEAD -- justfile &>/dev/null; then
+            return 0
+        fi
+        local blob blobs
+        blob=$(git hash-object "$TARGET") || return 1
+        blobs=$(git -C "{{ justfiles }}" log --all --format=%H -- "{{ source }}" \
+            | while read -r c; do git -C "{{ justfiles }}" rev-parse -q --verify "$c:{{ source }}"; done)
+        grep -qxF "$blob" <<< "$blobs"
+    }
+    if [[ -e "$TARGET" || -L "$TARGET" ]]; then
+        if recoverable; then
             rm -f "$TARGET"  # Not cp-over-symlink: cp would write through the link
         else
             echo "Moving existing $TARGET to $TARGET.{{ movesuffix }}"
@@ -267,7 +279,7 @@ fmt-check:
     set -euo pipefail
     rc=0
     for f in *.just justfile; do
-        just --fmt --check -f "$f" || { echo "⁂ not formatted: $f"; rc=1; }
+        just --fmt --check -f "$f" || { echo "not formatted: $f"; rc=1; }
     done
     exit "$rc"
 
