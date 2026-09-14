@@ -23,9 +23,9 @@ journal-canary:
 
 # Pull new journal entries (since the last collect) from a host into
 # .journal-dumps/<host>-<stamp>.log: just journal-brief-collect tonks
+[doc('Pull new journal entries from a host into .journal-dumps/')]
 [group('monitoring')]
 [positional-arguments]
-[doc('Pull new journal entries from a host into .journal-dumps/')]
 journal-brief-collect host:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -46,9 +46,9 @@ deploy *args:
 # A failing host does not stop the fleet; the summary names it and the exit
 # status is non-zero. (`import_playbook` cannot do this: a play whose only host
 # fails ends the whole run, and every later playbook is skipped silently.)
+[doc('Deploy all playbooks in turn, continuing past a failed host')]
 [group('deploy')]
 [positional-arguments]
-[doc('Deploy all playbooks in turn, continuing past a failed host')]
 deploy-all *args:
     #!/usr/bin/env bash
     set -uo pipefail
@@ -65,9 +65,9 @@ deploy-all *args:
 
 # Run a single ansible module: just adhoc atlas -m fetch -a "src=/etc/hosts dest=. flat=yes" -b
 # For shell commands reach for `just sh` instead. Use -f {threads} for parallel runs.
+[doc('Run a single ansible module against a host or group, raw output')]
 [group('deploy')]
 [positional-arguments]
-[doc('Run a single ansible module against a host or group, raw output')]
 adhoc *args:
     uv run ansible --vault-password-file=.vault_password.sh "$@"
 
@@ -81,10 +81,10 @@ adhoc *args:
 # verbatim — the command travels as a script file. The exit status is the
 # highest remote exit status (255 for an unreachable host), so a failure stops
 # a pipeline instead of passing empty output along.
+[doc('Run a shell command as root (--as-user to stay the login user)')]
 [group('deploy')]
 [no-exit-message]
 [positional-arguments]
-[doc('Run a shell command as root (--as-user to stay the login user)')]
 sh host cmd *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -149,9 +149,9 @@ sh host cmd *flags:
 # argument slot) for the very same rows unformatted, so that every symbol and its
 # score can be picked apart with jq:
 #   just rspamd-history 100 --json | jq '.[] | select(.action == "add header") | .symbols'
+[doc('Recent rspamd verdicts from tonks; --json for the raw rows')]
 [group('mail')]
 [positional-arguments]
-[doc('Recent rspamd verdicts from tonks; --json for the raw rows')]
 rspamd-history n="40" format="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -183,9 +183,9 @@ rspamd-history n="40" format="":
 #   just f2b-test tonks roles/mailserver/templates/fail2ban/filter.d/postfix-postscreen.conf.j2
 #   just f2b-test tonks roles/mailserver/templates/fail2ban/filter.d/foo.conf.j2 dovecot.service
 #   just f2b-test atlas roles/pretalx.com/templates/fail2ban/filter.d/caddy-403.conf.j2 /var/log/caddy/pretalx.com.log
+[doc("Replay a fail2ban filter template against a host's last 7 days of logs")]
 [group('monitoring')]
 [positional-arguments]
-[doc("Replay a fail2ban filter template against a host's last 7 days of logs")]
 f2b-test host template source="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -219,9 +219,9 @@ rspamd-check file *args:
 # Quotes of either kind are safe: jq encodes the query into the uri module's JSON
 # arguments, so it travels as data and never reaches a shell (the old -m shell +
 # curl form could not carry a single quote at all).
+[doc('Instant PromQL query against Prometheus on jorge')]
 [group('monitoring')]
 [positional-arguments]
-[doc('Instant PromQL query against Prometheus on jorge')]
 prom query:
     #!/usr/bin/env bash
     set -uo pipefail
@@ -237,16 +237,16 @@ prom query:
 # Examples: just dns list rixx.de [A [name]]
 #           just dns create rixx.de A grist-temp 2.28.2.63 [--ttl 3600]
 # just dns delete rixx.de A grist-temp   (or: delete rixx.de --id 123)
+[doc('Manage DNS records at INWX: list, create, delete')]
 [group('dns')]
 [positional-arguments]
-[doc('Manage DNS records at INWX: list, create, delete')]
 dns *args:
     uv run scripts/dns.py "$@"
 
 # All Grist accounts that ever logged in, with their team-org roles (the
 # admin-panel user list is enterprise-only; this reads the home DB instead)
-[group('grist')]
 [doc('All Grist accounts that ever logged in, with their team-org roles')]
+[group('grist')]
 grist-users:
     just adhoc grist -m shell -a "sqlite3 -header -column /opt/grist/data/home.sqlite3 'select u.id, u.name, l.email, (select group_concat(g.name) from group_users gu join groups g on g.id = gu.group_id join acl_rules a on a.group_id = g.id where gu.user_id = u.id and a.org_id = 3) as org_roles from users u left join logins l on l.user_id = u.id where u.id > 4'" -b \
         | tail -n +2
@@ -257,9 +257,9 @@ grist-users:
 # Interval accepts <number><unit> with unit m, h, d or w. Filtering and gzip run
 # on the server, so only the selected window crosses the wire, and the result is
 # newline-delimited JSON that pg-native tooling can read directly.
+[doc('Pull a postgres jsonlog window into .pg-logs/')]
 [group('monitoring')]
 [positional-arguments]
-[doc('Pull a postgres jsonlog window into .pg-logs/')]
 pg-log host interval="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -303,9 +303,9 @@ pg-log host interval="":
 # last stats reset, so it sees fast-but-frequent queries the 100 ms slow log
 # never logs), then the big tables ranked by full-table scans. The statement
 # text is user input in disguise: literals come from requests, treat as data.
+[doc('pg_stat_statements top-N and full-table scans on a live database')]
 [group('monitoring')]
 [positional-arguments]
-[doc('pg_stat_statements top-N and full-table scans on a live database')]
 pg-slow host db="pretalx" n="15":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -319,8 +319,8 @@ pg-slow host db="pretalx" n="15":
 # missed badly: just pg-summary .pg-logs/atlas-2026-07-31-140158.json
 # Each shape row is numbered; --shape N prints one in full, with the hour
 # histogram and the query_id to grep the pull by.
-[group('monitoring')]
 [doc('Summarise a pulled postgres log down to one screen')]
+[group('monitoring')]
 pg-summary file *args:
     uv run scripts/pg-log-summary.py '{{ file }}' {{ args }}
 
@@ -328,8 +328,8 @@ pg-summary file *args:
 # Dashboards are provisioned with allowUiUpdates, so click-ops edits live only in
 # Grafana until this runs. Files are matched to dashboards by uid; admin credentials
 # come from pass (web/grafana.rixx.de).
-[group('monitoring')]
 [doc('Pull live Grafana dashboards into the repo')]
+[group('monitoring')]
 grafana-pull:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -376,9 +376,9 @@ grafana-pull:
 #   just goaccess tonks                 -> list the sites that have a report
 #   just goaccess tonks rixx            -> fetch .goaccess/tonks-rixx.html, open it
 # just goaccess tonks rixx --refresh  -> regenerate on the host first (slow)
+[doc("Fetch a goaccess report for one of a host's caddy sites and open it")]
 [group('monitoring')]
 [positional-arguments]
-[doc("Fetch a goaccess report for one of a host's caddy sites and open it")]
 goaccess host site="" *flags:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -405,9 +405,9 @@ vault cmd *args:
 
 # The per-server sub-accounts run borg serve --append-only, so their prunes
 # only mark archives; compaction needs the unrestricted main account
+[doc('Compact luggage borg repos (append-only prunes become permanent)')]
 [group('deploy')]
 [positional-arguments]
-[doc('Compact luggage borg repos (append-only prunes become permanent)')]
 luggage-compact *hosts:
     #!/usr/bin/env bash
     set -u
