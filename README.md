@@ -34,8 +34,18 @@ set fallback
 set default-list
 ```
 
-Apart from that, justfiles should:
+The ``fallback`` option makes recipes from parent directories available, so if
+a recipe starts showing up in lots of repos, or should be available everywhere,
+it goes into ``root.just``.
+
+Other rules:
 
 - Mark helpers and CI-only recipes `[private]` so they don't clutter `just --list`.
 - Use `[group('...')]` to structure `just --list` output.
 - Use `[script(...)]` rather than shebang recipes, and for bash scripts, open with `set -euo pipefail`.
+- Every public recipe needs a one-line doc comment (or `[doc]` string)
+
+Some recipe-names are well-known and used pretty much everywhere: `just fmt` is
+expected to apply linting and auto-formatting, `just run` should run the
+default action or web server, `just build` should generate artifacts, `just
+test` should run the test suite with sensible default flags.
