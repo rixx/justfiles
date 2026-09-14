@@ -12,6 +12,23 @@ movesuffix := "moved-by-justfiles-install"
 # messages. Exclude both so the loop doesn't trap on its own machinery.
 marker_grep := "grep -rIn --exclude=root.just --exclude=llm.just --exclude=justfile --exclude=pretalx.just --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist,temp-results} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
 
+# pretalx plugins sharing pretalx-plugin.just, by checkout name under src/local/
+pretalx_plugins := "
+com
+downstream
+friendlycaptcha
+fontpack-free
+halfnarp
+media-ccc-de
+pages
+public-voting
+venueless
+vimeo
+youtube
+broadcast-tools
+plugin-cookiecutter/{{cookiecutter.__repo_name}}
+"
+
 # Central mapping of justfiles to their target directories
 # Format: "source.just:target_directory" (one per line)
 mappings := "
@@ -29,19 +46,6 @@ llm.just:" + home + "/src/llm
 postix.just:" + home + "/src/postix
 pretalx-docker.just:" + home + "/src/pretalx-docker
 pretalx.just:" + home + "/src/pretalx/main
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-com
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-downstream
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-friendlycaptcha
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-fontpack-free
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-halfnarp
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-media-ccc-de
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-pages
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-public-voting
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-venueless
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-vimeo
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-youtube
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-broadcast-tools
-pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-plugin-cookiecutter/{{cookiecutter.__repo_name}}
 pretix-plugin.just:" + home + "/src/pretix/src/local/pretix-c3
 pretix.just:" + home + "/src/pretix
 pxtx.just:" + home + "/src/pxtx
@@ -51,7 +55,7 @@ sheep.just:" + home + "/src/sheep
 spur.just:" + home + "/src/spur
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
-"
+" + replace_regex(pretalx_plugins, "(\\S+)", "pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-$1")
 
 # Check status of all justfiles (installed, differs, missing)
 [group('status')]
