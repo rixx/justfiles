@@ -94,6 +94,11 @@ claude_skill_mappings := "
 skills/systemd-journal-daily:" + home + "/src/ansible/.claude/skills/systemd-journal-daily
 "
 
+# Saved workflows, resolved by meta.name via Workflow({name}) or /<name>
+workflow_mappings := "
+workflows:" + home + "/.claude/workflows
+"
+
 # Hooks: global first, then per-project
 hook_mappings := "
 hooks/head-tail.py:" + home + "/.claude/hooks/head-tail.py
@@ -101,7 +106,7 @@ hooks/wiki-startup.sh:" + home + "/.claude/hooks/wiki-startup.sh
 hooks/check-uv-pytest.py:" + home + "/src/pretalx/main/.claude/hooks/check-uv-pytest.py
 "
 
-mappings := claude_md_mappings + plugin_claude_md_mappings + global_skill_mappings + pretalx_skill_mappings + claude_skill_mappings + hook_mappings + tool_mappings
+mappings := claude_md_mappings + plugin_claude_md_mappings + global_skill_mappings + pretalx_skill_mappings + claude_skill_mappings + workflow_mappings + hook_mappings + tool_mappings
 
 # Helper shared by the recipes below (sourced via eval)
 mapping_lib := '''

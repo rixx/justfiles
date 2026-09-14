@@ -249,12 +249,14 @@ diff:
         fi
     done <<< '{{ mappings }}'
 
-# Format every justfile in this repo
+# Format justfiles (pass file to format only that one)
 [group('formatting')]
 [script('bash')]
-fmt:
+fmt *files:
     set -euo pipefail
-    for f in *.just justfile; do
+    files=({{ files }})
+    [[ ${#files[@]} -eq 0 ]] && files=(*.just justfile)
+    for f in "${files[@]}"; do
         just --fmt -f "$f"
     done
 
