@@ -169,7 +169,6 @@ install-gui:
         doit sudo systemctl reload systemd-logind
     fi
 
-    # Hibernation: swapfile is created by hand (see hibernate/README), config lives here.
     if ! cmp -s hibernate/sleep.conf /etc/systemd/sleep.conf.d/hibernate.conf; then
         doit sudo install -Dm644 hibernate/sleep.conf /etc/systemd/sleep.conf.d/hibernate.conf
     fi

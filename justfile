@@ -47,6 +47,7 @@ pretix.just:" + home + "/src/pretix
 pxtx.just:" + home + "/src/pxtx
 schedule.just:" + home + "/src/schedule
 scriptorium.just:" + home + "/src/scriptorium
+sheep.just:" + home + "/src/sheep
 spur.just:" + home + "/src/spur
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
