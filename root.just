@@ -29,3 +29,26 @@ strings:
     else
         echo "No ⁂ string markers found."
     fi
+
+# Rebase-merge the PR for a pretalx branch (default: the current branch)
+[script('bash')]
+px-merge branch="":
+    set -euo pipefail
+    dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
+    cd "${dir:-$PWD}"
+    branch="{{ branch }}"
+    [ -n "$branch" ] || branch=$(git rev-parse --abbrev-ref HEAD)
+    gh pr merge "$branch" --rebase
+
+# px-merge, then drop the worktree, delete the branch and close the pxtx issue
+[script('bash')]
+px-cleanup branch="":
+    set -euo pipefail
+    dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
+    cd "${dir:-$PWD}"
+    branch="{{ branch }}"
+    [ -n "$branch" ] || branch=$(git rev-parse --abbrev-ref HEAD)
+    gh pr merge "$branch" --rebase
+    # unworktree needs a cwd that is still a git repo, and this one is about to go
+    cd ~/src/pretalx/main
+    fish -c "unworktree $branch"

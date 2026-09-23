@@ -35,6 +35,7 @@ mappings := "
 root.just:" + home + "
 ansible.just:" + home + "/src/ansible
 ansible-presale.just:" + home + "/src/ansible_presale
+3ddruck.just:" + home + "/src/3ddruck
 c3queue.just:" + home + "/src/c3queue
 clabot.just:" + home + "/src/clabot-config
 diathek.just:" + home + "/src/diathek
@@ -55,6 +56,7 @@ sheep.just:" + home + "/src/sheep
 spur.just:" + home + "/src/spur
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
+bildungsfernsehen.just:" + home + "/src/tools/bildungsfernsehen
 " + replace_regex(pretalx_plugins, "(\\S+)", "pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-$1")
 
 # Check status of all justfiles (installed, differs, missing)

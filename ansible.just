@@ -69,7 +69,10 @@ deploy-all *args:
 [group('deploy')]
 [positional-arguments]
 adhoc *args:
-    uv run ansible --vault-password-file=.vault_password.sh "$@"
+    #!/usr/bin/env bash
+    # Lesson: a non-blocking stderr (harness pipe after `>/dev/null &&`) makes
+    # ansible abort with "requires blocking IO"; a cat pipe is always blocking.
+    uv run ansible --vault-password-file=.vault_password.sh "$@" 2> >(cat >&2)
 
 # Run a shell command as root. A single host prints its plain output, ready to
 # pipe; a group prefixes every line with "host<TAB>" to keep the hosts apart:
