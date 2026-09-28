@@ -54,6 +54,7 @@ schedule.just:" + home + "/src/schedule
 scriptorium.just:" + home + "/src/scriptorium
 sheep.just:" + home + "/src/sheep
 spur.just:" + home + "/src/spur
+stable-lapse.just:" + home + "/src/stable-lapse
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
 bildungsfernsehen.just:" + home + "/src/tools/bildungsfernsehen
