@@ -81,6 +81,7 @@ pretalx_skills := "
 compress-tests
 github-notif-triage
 pretalx-changelog
+pretalx-dependabot
 pretalx-translations
 pxtx-dev
 release-blog-post
