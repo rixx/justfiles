@@ -124,7 +124,7 @@ sh host cmd *flags:
     # Ansible runs the script on a pty, so tty-aware tools (pacman, systemd)
     # emit colour and cursor escapes that glue themselves to the value and
     # break every grep downstream: strip CSI sequences here.
-    noise='def demark: sub("\u001b\\]3008;end=[^\u001b]*(\u001b\\\\)?"; "") | gsub("\u001b\\[[0-9;?]*[ -/]*[@-~]"; ""); def noise: test("^(Shared c|C)onnection to .* closed\\.$") or length == 0;'
+    noise='def demark: gsub("\u001b\\]3008;(start|end)=[^\u001b]*(\u001b\\\\)?"; "") | gsub("\u001b\\[[0-9;?]*[ -/]*[@-~]"; ""); def noise: test("^(Shared c|C)onnection to .* closed\\.$") or length == 0;'
     if [[ -n "$json" ]]; then
         printf '%s\n' "$hosts" | jq .
     elif [[ "$(printf '%s' "$hosts" | jq 'length')" == 1 ]]; then
@@ -174,10 +174,12 @@ bg host unit cmd:
     # The command travels as a script file, so its quoting never meets
     # systemd-run's.
     printf '#!/bin/bash\nset -uo pipefail\nexport SYSTEMD_PAGER=cat PAGER=cat\n%s\n' "$cmd" > "$tmp"
-    just adhoc "$host" -m copy -a "src=$tmp dest=/root/$unit.sh mode=0700" -b > /dev/null
+    # Lesson: the wrapper used to live at /root/<unit>.sh, where a payload copied
+    # by hand got overwritten and the wrapper then ran itself in a loop.
+    just adhoc "$host" -m copy -a "src=$tmp dest=/root/.just-bg-$unit.sh mode=0700" -b > /dev/null
     just sh "$host" "systemd-run --unit=$unit --description='just bg: $unit' \
         -p StandardOutput=file:/root/$unit.log -p StandardError=file:/root/$unit.log \
-        /root/$unit.sh"
+        /root/.just-bg-$unit.sh"
 
 # Recent rspamd verdicts (time, score, action, sender, rcpt, subject, top symbols): just rspamd-history [n]
 # The TSV summary keeps only the eight strongest symbols; add --json (in either
@@ -278,6 +280,10 @@ prom query:
 dns *args:
     uv run scripts/dns.py "$@"
 
+# tailscale/policy.hujson: push (default), check, pull
+tailscale-policy cmd="push":
+    uv run scripts/tailscale-policy.py {{ cmd }}
+
 # All Grist accounts that ever logged in, with their team-org roles (the
 # admin-panel user list is enterprise-only; this reads the home DB instead)
 [doc('All Grist accounts that ever logged in, with their team-org roles')]
@@ -285,6 +291,19 @@ dns *args:
 grist-users:
     just adhoc grist -m shell -a "sqlite3 -header -column /opt/grist/data/home.sqlite3 'select u.id, u.name, l.email, (select group_concat(g.name) from group_users gu join groups g on g.id = gu.group_id join acl_rules a on a.group_id = g.id where gu.user_id = u.id and a.org_id = 3) as org_roles from users u left join logins l on l.user_id = u.id where u.id > 4'" -b \
         | tail -n +2
+
+# Fixed host and a strict address pattern, so that a permission rule for this
+# recipe grants exactly this and no other shell access to ikarus.
+[doc('Mark staging.pretalx.com accounts as email-verified')]
+[group('pretalx')]
+[positional-arguments]
+staging-verify-user +emails:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for e in "$@"; do
+        [[ "$e" =~ ^[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+$ ]] || { echo "not an email address: $e" >&2; exit 2; }
+    done
+    just sh ikarus "px run verify_user $*"
 
 # Pull a database host's postgres jsonlog into .pg-logs/<host>-<stamp>.json:
 #   just pg-log atlas          -> everything still on disk

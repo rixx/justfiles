@@ -18,6 +18,8 @@ just clean         # Show backup files that would be removed
 just clean-confirm # Remove backup files created during install
 just diff          # Show differences between repo and installed justfiles
 just install       # Install all justfiles to their projects
+just install ereader llm   # only those; other projects' conflicts are skipped
+just pull ereader  # same for pull; bare `just pull` still visits every mapping
 just status        # Check status of all justfiles
 ```
 

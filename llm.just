@@ -91,6 +91,7 @@ pretalx_skill_mappings := replace_regex(pretalx_skills, "(\\S+)", "skills/$1:" +
 # Skills scoped to other projects
 claude_skill_mappings := "
 skills/systemd-journal-daily:" + home + "/src/ansible/.claude/skills/systemd-journal-daily
+skills/lead-research:" + home + "/src/pretalx/main/src/local/pretalx-com/.claude/skills/lead-research
 "
 
 # Saved workflows, resolved by meta.name via Workflow({name}) or /<name>
@@ -159,7 +160,7 @@ status:
 # Link a single repo file to its target path
 [private]
 [script('bash')]
-link-one source target:
+link-one source target flags="":
     set -euo pipefail
     ORIGIN="{{ repo }}/{{ source }}"
     TARGET="{{ target }}"
@@ -179,6 +180,13 @@ link-one source target:
         exit 0
     fi
 
+    if [[ -e "$TARGET" && ! -L "$TARGET" && "{{ flags }}" != *--force* ]] \
+        && ! diff -rq "$TARGET" "$ORIGIN" > /dev/null 2>&1; then
+        echo "Refusing: $TARGET differs from {{ source }} (just adopt, or install --force)"
+        diff -ru "$ORIGIN" "$TARGET" || true
+        exit 1
+    fi
+
     if [[ -e "$TARGET" || -L "$TARGET" ]]; then
         echo "Moving existing $TARGET to $TARGET.{{ movesuffix }}"
         mv "$TARGET" "$TARGET.{{ movesuffix }}"
@@ -187,16 +195,19 @@ link-one source target:
     echo "Linking: {{ source }} -> $TARGET"
     ln -s "$ORIGIN" "$TARGET"
 
-# Link every mapped file into place
+# Link every mapped file into place; refuses to replace a real file that
+# differs from the repo copy unless --force
 [group('sync')]
 [script('bash')]
-install:
+install *flags:
     set -euo pipefail
     MAPPINGS='{{ mappings }}'
     eval '{{ mapping_lib }}'
 
-    install_one() { just link-one "$1" "$2"; }
+    rc=0
+    install_one() { just link-one "$1" "$2" "{{ flags }}" || rc=1; }
     each_mapping install_one
+    exit "$rc"
 
 # Replace our symlinks with real copies, e.g. before handing a machine over
 [group('sync')]

@@ -103,12 +103,13 @@ status:
 # Copy a single justfile to a project directory
 [private]
 [script('bash')]
-copy source target_dir:
+copy source target_dir flags="":
     set -euo pipefail
     SOURCE="{{ justfiles }}/{{ source }}"
     TARGET_DIR="{{ target_dir }}"
     TARGET_DIR="${TARGET_DIR%/}"  # Remove trailing slash if present
     TARGET="$TARGET_DIR/justfile"
+    FLAGS="{{ flags }}"
 
     # Check if source exists
     if [[ ! -f "$SOURCE" ]]; then
@@ -127,15 +128,7 @@ copy source target_dir:
         exit 0
     fi
 
-    # Back up the existing file unless git can already restore it: tracked and
-    # matching HEAD means the copy is recoverable, so a backup is just litter.
-    # Same for a target that equals any committed version of the source here:
-    # an edit/install loop otherwise leaves a backup per run.
-    recoverable() {
-        if git -C "$TARGET_DIR" ls-files --error-unmatch -- justfile &>/dev/null \
-            && git -C "$TARGET_DIR" diff --quiet HEAD -- justfile &>/dev/null; then
-            return 0
-        fi
+    stale() {
         local blob blobs
         blob=$(git hash-object "$TARGET") || return 1
         blobs=$(git -C "{{ justfiles }}" log --all --format=%H -- "{{ source }}" \
@@ -143,11 +136,15 @@ copy source target_dir:
         grep -qxF "$blob" <<< "$blobs"
     }
     if [[ -e "$TARGET" || -L "$TARGET" ]]; then
-        if recoverable; then
+        if stale; then
             rm -f "$TARGET"  # Not cp-over-symlink: cp would write through the link
-        else
+        elif [[ "$FLAGS" == *--force* ]]; then
             echo "Moving existing $TARGET to $TARGET.{{ movesuffix }}"
             mv "$TARGET" "$TARGET.{{ movesuffix }}"
+        else
+            echo "Refusing: $TARGET has edits not in this repo (just pull, or install --force)"
+            diff -u "$TARGET" "$SOURCE" || true
+            exit 1
         fi
     fi
 
@@ -158,12 +155,13 @@ copy source target_dir:
 # Pull a single justfile from a project directory back to repo
 [private]
 [script('bash')]
-pull-one source target_dir:
+pull-one source target_dir flags="":
     set -euo pipefail
     REPO="{{ justfiles }}/{{ source }}"
     TARGET_DIR="{{ target_dir }}"
     TARGET_DIR="${TARGET_DIR%/}"
     INSTALLED="$TARGET_DIR/justfile"
+    FLAGS="{{ flags }}"
 
     # Check if target directory exists
     if [[ ! -d "$TARGET_DIR" ]]; then
@@ -180,29 +178,64 @@ pull-one source target_dir:
         exit 0
     fi
 
+    stale() {
+        local rel blob blobs
+        if rel=$(git -C "$TARGET_DIR" ls-files --full-name --error-unmatch -- justfile 2>/dev/null); then
+            blob=$(git hash-object "$REPO") || return 1
+            blobs=$(git -C "$TARGET_DIR" log --all --format=%H -- "$rel" \
+                | while read -r c; do git -C "$TARGET_DIR" rev-parse -q --verify "$c:$rel"; done)
+            grep -qxF "$blob" <<< "$blobs"
+        else
+            git -C "{{ justfiles }}" diff --quiet HEAD -- "{{ source }}"
+        fi
+    }
+    if ! stale && [[ "$FLAGS" != *--force* ]]; then
+        echo "Refusing: {{ source }} and $INSTALLED both changed (merge by hand, or pull --force)"
+        diff -u "$REPO" "$INSTALLED" || true
+        exit 1
+    fi
+
     # Copy installed file to repo
     echo "Pulling: $INSTALLED -> {{ source }}"
     cp "$INSTALLED" "$REPO"
 
-# Install all justfiles to their projects
+# Install all justfiles to their projects; refuses a copy that would drop
+# project-side edits unless --force.
 [group('sync')]
 [script('bash')]
-install:
+install *args:
     set -euo pipefail
+    flags=""; names=()
+    for a in {{ args }}; do
+        case "$a" in --*) flags="$flags $a" ;; *) names+=("${a%.just}.just") ;; esac
+    done
+    wanted() { [[ ${#names[@]} -eq 0 ]] || printf '%s\n' "${names[@]}" | grep -qxF "$1"; }
+    rc=0
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
-        just copy "$source" "$target"
+        wanted "$source" || continue
+        just copy "$source" "$target" "$flags" || rc=1
     done <<< '{{ mappings }}'
+    exit "$rc"
 
-# Pull all modified justfiles from projects back to repo
+# Pull all modified justfiles from projects back to repo; refuses when both
+# sides changed unless --force.
 [group('sync')]
 [script('bash')]
-pull:
+pull *args:
     set -euo pipefail
+    flags=""; names=()
+    for a in {{ args }}; do
+        case "$a" in --*) flags="$flags $a" ;; *) names+=("${a%.just}.just") ;; esac
+    done
+    wanted() { [[ ${#names[@]} -eq 0 ]] || printf '%s\n' "${names[@]}" | grep -qxF "$1"; }
+    rc=0
     while IFS=: read -r source target; do
         [[ -z "$source" ]] && continue
-        just pull-one "$source" "$target"
+        wanted "$source" || continue
+        just pull-one "$source" "$target" "$flags" || rc=1
     done <<< '{{ mappings }}'
+    exit "$rc"
 
 # Show backup files that would be removed
 [group('cleanup')]

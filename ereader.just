@@ -48,27 +48,33 @@ push *args:
 diff *args:
     ./koreader/sync.sh diff {{ args }}
 
-# Rebuild the screensaver placement picker; `--open` opens it in the browser
+# Run the screensaver picker web UI (migrates first); extra args go to runserver
 [group('screensavers')]
 pick *args:
-    ./koreader/screensavers/manage.py pick {{ args }}
+    cd koreader/screensavers/picker && uv run manage.py migrate -v0 && uv run manage.py runserver {{ args }}
 
-# Render plan.txt into screensavers/out
+# Fetch catalog metadata for the picker (decisions are kept)
 [group('screensavers')]
-apply *args:
-    ./koreader/screensavers/manage.py apply {{ args }}
+pick-refresh *args:
+    cd koreader/screensavers/picker && uv run manage.py refresh {{ args }}
 
-# Mirror screensavers/out to the device, then trash delete-only originals; `--dry-run` to preview
+# Add hand-picked images (files or URLs) to triage; `--tag NAME` repeatable
+[group('screensavers')]
+[positional-arguments]
+pick-add *args:
+    cd koreader/screensavers/picker && uv run manage.py add --cwd "{{ invocation_directory() }}" "$@"
+
+# Download untriaged originals in queue order plus thumbnails for the rest; `--limit N`
+[group('screensavers')]
+pick-fetch *args:
+    cd koreader/screensavers/picker && uv run manage.py fetch {{ args }}
+
+# Mirror screensavers/out to the device; `--dry-run` to preview
 [group('screensavers')]
 sync *args:
-    ./koreader/screensavers/manage.py sync {{ args }}
+    cd koreader/screensavers/picker && uv run manage.py sync {{ args }}
 
-# Trash originals whose plan lines are all `delete` and drop them from plan.txt
-[group('screensavers')]
-prune *args:
-    ./koreader/screensavers/manage.py prune {{ args }}
-
-# Compare originals, plan, out and device
+# Triage counts, out/ consistency and device state
 [group('screensavers')]
 status *args:
-    ./koreader/screensavers/manage.py status {{ args }}
+    cd koreader/screensavers/picker && uv run manage.py status {{ args }}

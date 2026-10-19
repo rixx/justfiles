@@ -1,39 +1,63 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set quiet
 set fallback
+set positional-arguments
 set default-list
 
-export BIN := "../../.venv/bin"
+uv_dev := "uv run --extra=dev"
 
-# Run all code quality checks (black, isort, flake8)
+# Run ruff format
 [group('linting')]
-check:
-    uvx black --check pretix_scheduling/
-    uvx isort --check --gitignore pretix_scheduling/
-    uvx flake8 --extend-exclude .cache pretix_scheduling/
-    @echo '{{ GREEN }}All checks passed{{ NORMAL }}'
+format *args=".":
+    {{ uv_dev }} ruff format "$@"
 
-# Run all formatters (black, isort)
+# Run ruff check
 [group('linting')]
-fmt:
-    uvx black pretix_scheduling/
-    uvx isort --gitignore pretix_scheduling/
-    @echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
+check *args=".":
+    {{ uv_dev }} ruff check "$@"
 
-# Run a command from the venv bin directory (defaults to python)
-[group('development')]
-[positional-arguments]
-run *args:
-    @if [ "$#" -eq 0 ]; then set -- python; fi; "$BIN/$1" "${@:2}"
+# Format Django templates with djangofmt.
+[group('linting')]
+djangofmt *args="":
+    -{{ uv_dev }} djangofmt {{ args }} .
 
-# Run test suite (runs with coverage if no args given)
+[group('linting')]
+djangofmt-check:
+    just djangofmt
+    git diff --exit-code -- '*.html' || (echo "HTML templates are not formatted. Run 'just djangofmt' to fix." && exit 1)
+
+# Run all formatters and linters
+[group('linting')]
+fmt: (check "--fix") format djangofmt && fmt-done
+
+[private]
+fmt-done:
+    echo '{{ GREEN }}Formatting complete{{ NORMAL }}'
+
+# Run all code quality checks
+[group('linting')]
+fmt-check: (format "--check") check djangofmt-check && check-done
+
+[private]
+check-done:
+    echo '{{ GREEN }}All checks passed{{ NORMAL }}'
+
+# Run tests (installs pretix if not already present)
 [group('tests')]
-[script('bash')]
-test *args="":
-    if [[ -n "{{ args }}" ]]; then
-        $BIN/pytest {{ args }}
-    else
-        $BIN/coverage run --module pytest
-        $BIN/coverage report
-        $BIN/coverage html
-    fi
+test *args: ensure-pretix
+    {{ uv_dev }} pytest "$@"
+
+# Install pretix from git
+[group('development')]
+install-pretix:
+    uv pip install "pretix[dev] @ git+https://github.com/pretix/pretix@master"
+
+# Install a local editable copy of pretix (for development)
+[group('development')]
+install-pretix-local path="../../..":
+    uv pip install -e "{{ path }}[dev]"
+
+# Ensure pretix is importable, installing it from git if needed
+[private]
+ensure-pretix:
+    {{ uv_dev }} python -c "import pretix" 2>/dev/null || just install-pretix
