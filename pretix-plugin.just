@@ -23,8 +23,7 @@ djangofmt *args="":
 
 [group('linting')]
 djangofmt-check:
-    just djangofmt
-    git diff --exit-code -- '*.html' || (echo "HTML templates are not formatted. Run 'just djangofmt' to fix." && exit 1)
+    {{ uv_dev }} djangofmt --check . || (echo "HTML templates are not formatted. Run 'just djangofmt' to fix." && exit 1)
 
 # Run all formatters and linters
 [group('linting')]

@@ -238,10 +238,12 @@ f2b-test host template source="":
     fi
     dest="/etc/fail2ban/filter.d/zz-$name-test.conf"
     just adhoc "$host" -m template -a "src=$PWD/$tpl dest=$dest mode=0644" -b > /dev/null
+    # Hits per IP: compare the top counts against the jail's maxretry.
+    top="echo '--- top IPs by hits'; fail2ban-regex \"\$log\" '$dest' -o ip | sort | uniq -c | sort -rn | head -10"
     if [[ "$source" == /* ]]; then
-        just sh "$host" "fail2ban-regex '$source' '$dest' --print-no-missed; rc=\$?; rm -f '$dest'; exit \$rc"
+        just sh "$host" "log='$source'; fail2ban-regex \"\$log\" '$dest' --print-no-missed; rc=\$?; $top; rm -f '$dest'; exit \$rc"
     else
-        just sh "$host" "journalctl -u '$source' --since '7 days ago' -o short > /var/tmp/f2b-test.log; fail2ban-regex /var/tmp/f2b-test.log '$dest' --print-no-missed; rc=\$?; rm -f '$dest' /var/tmp/f2b-test.log; exit \$rc"
+        just sh "$host" "log=/var/tmp/f2b-test.log; journalctl -u '$source' --since '7 days ago' -o short > \"\$log\"; fail2ban-regex \"\$log\" '$dest' --print-no-missed; rc=\$?; $top; rm -f '$dest' \"\$log\"; exit \$rc"
     fi
 
 # Re-score a stored mail as the milter saw it: just rspamd-check <file.eml> [rspamc args]
@@ -467,7 +469,15 @@ luggage-compact *hosts:
     set -u
     export PASSWORD_STORE_DIR="${PASSWORD_STORE_DIR:-$HOME/.local/share/password-store}"
     rc=0
-    for h in ${@:-atlas ikarus mycroft jorge tonks munin cord}; do
+    hosts=("$@")
+    if [ ${#hosts[@]} -eq 0 ]; then
+        # Default: every pass entry under server/luggage/ with a key export, same as borg-paper
+        for f in "$PASSWORD_STORE_DIR"/server/luggage/*.gpg; do
+            h=$(basename "$f" .gpg)
+            pass show "server/luggage/$h" | grep -q BORG_KEY && hosts+=("$h")
+        done
+    fi
+    for h in "${hosts[@]}"; do
         printf '%s compacting %s\n' "$(date +%H:%M:%S)" "$h" >&2
         BORG_PASSCOMMAND="sh -c 'pass show server/luggage/$h | head -n1'" \
             borg compact --verbose --lock-wait 600 "ssh://luggage/./backups/$h/$h"
@@ -476,3 +486,9 @@ luggage-compact *hosts:
         [ "$c" -eq 0 ] || printf '%s %s failed with exit code %s\n' "$(date +%H:%M:%S)" "$h" "$c" >&2
     done
     exit $rc
+
+# Reprint after every new repo or passphrase change; output is tmpfs only
+[doc('Printable borg recovery sheet (passphrase + key export) for every luggage repo')]
+[group('deploy')]
+borg-paper:
+    f=$(scripts/borg-paper.sh); echo "print $f, then: rm $f"
