@@ -65,6 +65,7 @@ global_skills := "
 browser-screenshots
 justfile
 skill-authoring
+unstick
 wiki
 wind-down
 "
