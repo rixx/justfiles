@@ -36,6 +36,15 @@ journal-brief-collect host:
     just adhoc "$host" -m fetch -a "src=$f dest=.journal-dumps/$host-$stamp.log flat=yes" -b > /dev/null
     wc -l ".journal-dumps/$host-$stamp.log"
 
+# DMARC aggregate reports for pretalx.com: fetch the DMARC folder of the
+# pretalx mailbox on tonks into .dmarc/, print a per-source summary, delete
+# the mails on tonks. --keep leaves them; local files skip the pull.
+[doc('Pull and summarise DMARC reports from tonks, then delete them there')]
+[group('monitoring')]
+[positional-arguments]
+dmarc-pull *args:
+    uv run scripts/dmarc-pull.py "$@"
+
 # Deploy to a server: just deploy playbooks/atlas.yml --tags pretalxupdate
 [group('deploy')]
 [positional-arguments]
