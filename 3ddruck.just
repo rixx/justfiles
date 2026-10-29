@@ -31,6 +31,12 @@ preset-new kind name parent *args:
 slice stl preset *args:
     python3 scripts/presets.py slice "$@"
 
+# Predict torn wall bands and recommend settings: just settings-rec part.3mf [--max-slices 12] slices and searches seam/perimeter settings; part.gcode [--png] [--out DIR] gives the verdict only
+[no-cd]
+[positional-arguments]
+settings-rec file *args:
+    uv run --with heatshrink2 --with numpy --with scipy --with matplotlib python3 "{{ justfile_directory() }}/scripts/settings_rec.py" "$@"
+
 # Show what user print presets change against their system parents; -a includes keys the bundle does not set
 [group('presets')]
 [positional-arguments]
@@ -41,3 +47,9 @@ preset-diff *args:
 [positional-arguments]
 swatch *args:
     if [ $# -eq 0 ]; then scripts/swatch.py --interactive; else scripts/swatch.py "$@"; fi
+
+# Generate, slice and verify a calibration print, see calibration/README.md: just calibrate temp|mvs|pa|em [-f FILAMENT] [-p "0.20mm structural"] [--values 245,240,...]
+[group('presets')]
+[positional-arguments]
+calibrate test *args:
+    python3 scripts/calibrate.py "$@"

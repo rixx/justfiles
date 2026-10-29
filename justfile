@@ -58,6 +58,7 @@ stable-lapse.just:" + home + "/src/stable-lapse
 templates.just:" + home + "/doc/gewerbe/templates
 tools.just:" + home + "/src/tools
 bildungsfernsehen.just:" + home + "/src/tools/bildungsfernsehen
+presale-stats.just:" + home + "/doc/chaos/presale
 " + replace_regex(pretalx_plugins, "(\\S+)", "pretalx-plugin.just:" + home + "/src/pretalx/main/src/local/pretalx-$1")
 
 # Check status of all justfiles (installed, differs, missing)
