@@ -48,7 +48,7 @@ preset-diff *args:
 swatch *args:
     if [ $# -eq 0 ]; then scripts/swatch.py --interactive; else scripts/swatch.py "$@"; fi
 
-# Generate, slice and verify a calibration print, see calibration/README.md: just calibrate temp|mvs|pa|em [-f FILAMENT] [-p "0.20mm structural"] [--values 245,240,...]
+# Generate, slice and verify a calibration print, see calibration/README.md: just calibrate temp|mvs|pa|em|ironing|support [-f FILAMENT] [-p "0.20mm balanced"] [--values 245,240,...]
 [group('presets')]
 [positional-arguments]
 calibrate test *args:
