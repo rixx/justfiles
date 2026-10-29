@@ -10,7 +10,7 @@ movesuffix := "moved-by-llm-install"
 # Local override of root.just's `strings`: this repo stores the prompts that
 # define the marker convention, so claude-md/root.md and prompts/string-markers.md
 # legitimately contain the ⁂ glyph. Exclude both so the loop doesn't trap on them.
-marker_grep := "grep -rIn --exclude=justfile --exclude=root.md --exclude=string-markers.md --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
+marker_grep := "grep -rInH --exclude=justfile --exclude=root.md --exclude=string-markers.md --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist} '⁂' \"$target\" | grep -v '[⸻❧꧁꧂☙]'"
 
 # Central mapping of repo files to the places the tools expect them.
 # Format: "repo/path:/absolute/target/path" (one per line). Sources may be
@@ -305,12 +305,14 @@ clean-confirm:
 
 # Resolve string markers
 [script('bash')]
-strings:
+strings path=".":
     set -euo pipefail
     # Under `set fallback`, just clears INVOCATION_DIRECTORY and runs us from the
     # parent justfile's dir; the parent `just` process ($PPID) keeps the real cwd.
     dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
     cd "${dir:-$PWD}"
+    target={{ quote(path) }}
+    [ -e "$target" ] || { echo "No such file or directory: $target" >&2; exit 1; }
     found=
     while hit=$({{ marker_grep }} | head -n1); [ -n "$hit" ]; do
         found=1

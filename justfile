@@ -10,7 +10,7 @@ movesuffix := "moved-by-justfiles-install"
 # Local override of root.just's `strings`: this repo defines the marker tooling,
 # so root.just and this justfile legitimately contain the ⁂ glyph in code and
 # messages. Exclude both so the loop doesn't trap on its own machinery.
-marker_grep := "grep -rIn --exclude=root.just --exclude=llm.just --exclude=justfile --exclude=pretalx.just --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist,temp-results} '⁂' . | grep -v '[⸻❧꧁꧂☙]'"
+marker_grep := "grep -rInH --exclude=root.just --exclude=llm.just --exclude=justfile --exclude=pretalx.just --exclude-dir={.git,.venv,node_modules,dist,build,_build,data,htmlcov,static.dist,temp-results} '⁂' \"$target\" | grep -v '[⸻❧꧁꧂☙]'"
 
 # pretalx plugins sharing pretalx-plugin.just, by checkout name under src/local/
 pretalx_plugins := "
@@ -322,10 +322,12 @@ fmt-check:
 
 # Resolve string markers
 [script('bash')]
-strings:
+strings path=".":
     set -euo pipefail
     dir="${INVOCATION_DIRECTORY:-$(readlink "/proc/$PPID/cwd" 2>/dev/null || true)}"
     cd "${dir:-$PWD}"
+    target={{ quote(path) }}
+    [ -e "$target" ] || { echo "No such file or directory: $target" >&2; exit 1; }
     found=
     while hit=$({{ marker_grep }} | head -n1); [ -n "$hit" ]; do
         found=1
